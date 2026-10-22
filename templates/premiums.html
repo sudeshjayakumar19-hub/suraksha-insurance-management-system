@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block page_header %}Premium Management & Billing Ledger{% endblock %}
+
+{% block content %}
+<!-- Premium Summary Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 24px;">
+  <div class="stat-card accent-blue">
+    <div class="stat-label">Total Scheduled Premium</div>
+    <div class="stat-value">₹{{ "{:,.2f}".format(scheduled_total) }}</div>
+    <div class="stat-subtext">Contractual Receivables (26 Installments)</div>
+  </div>
+
+  <div class="stat-card accent-green">
+    <div class="stat-label">Total Premium Collected</div>
+    <div class="stat-value" style="color: #10b981;">₹{{ "{:,.2f}".format(collected_total) }}</div>
+    <div class="stat-subtext">Reconciled Cash Receipts (14 Payments)</div>
+  </div>
+
+  <div class="stat-card accent-red">
+    <div class="stat-label">Outstanding / Overdue Balance</div>
+    <div class="stat-value" style="color: #ef4444;">₹{{ "{:,.2f}".format(outstanding_total) }}</div>
+    <div class="stat-subtext">Pending & Overdue Installments</div>
+  </div>
+</div>
+
+<!-- Premium Schedule Table with Status Filtering -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-receipt" style="margin-right: 8px;"></i> Installment Schedules & Reconciliation Ledger</div>
+  </div>
+  <div class="card-body">
+    <!-- Filter Tabs / Links -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <a href="{{ url_for('premiums.premium_list') }}" class="btn {% if not status_filter or status_filter == 'ALL' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">ALL (26)</a>
+      <a href="{{ url_for('premiums.premium_list', status='PAID') }}" class="btn {% if status_filter == 'PAID' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PAID (23)</a>
+      <a href="{{ url_for('premiums.premium_list', status='PENDING') }}" class="btn {% if status_filter == 'PENDING' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PENDING (1)</a>
+      <a href="{{ url_for('premiums.premium_list', status='OVERDUE') }}" class="btn {% if status_filter == 'OVERDUE' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">OVERDUE (1)</a>
+      <a href="{{ url_for('premiums.premium_list', status='WAIVED') }}" class="btn {% if status_filter == 'WAIVED' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">WAIVED (1)</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Policy Number</th>
+            <th>Customer</th>
+            <th>Installment #</th>
+            <th>Due Date</th>
+            <th>Grace Period End</th>
+            <th>Scheduled Amount</th>
+            <th>Schedule Status</th>
+            <th>Payment Ref / Receipt</th>
+            <th>Paid Date</th>
+            <th>Paid Amount</th>
+            <th>Payment Mode</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in schedules %}
+          <tr>
+            <td style="font-weight: 700;">
+              <a href="{{ url_for('policies.policy_detail', policy_id=s.policy_id) }}" style="color: #0f172a;">
+                {{ s.policy_number }}
+              </a>
+            </td>
+            <td>{{ s.customer_name }}</td>
+            <td style="font-weight: 600;">#{{ s.installment_number }}</td>
+            <td>{{ s.due_date }}</td>
+            <td style="font-size: 0.82rem; color: #64748b;">{{ s.grace_period_end_date }}</td>
+            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(s.installment_amount|float) }}</td>
+            <td><span class="badge badge-{{ s.schedule_status|lower }}">{{ s.schedule_status }}</span></td>
+            <td>
+              {% if s.payment_reference_no %}
+                <span style="font-family: monospace; font-size: 0.8rem; font-weight: 600;">{{ s.payment_reference_no }}</span>
+              {% else %}
+                <span style="color: #94a3b8; font-style: italic;">No Payment</span>
+              {% endif %}
+            </td>
+            <td>{{ s.payment_date or '-' }}</td>
+            <td style="font-weight: 600;">
+              {% if s.amount_paid %}₹{{ "{:,.2f}".format(s.amount_paid|float) }}{% else %}-{% endif %}
+            </td>
+            <td>
+              {% if s.payment_mode %}
+                <span style="font-size: 0.82rem; font-weight: 600; color: #475569;">{{ s.payment_mode }}</span>
+              {% else %}-{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

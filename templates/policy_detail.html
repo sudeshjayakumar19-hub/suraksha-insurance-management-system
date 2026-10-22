@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block page_header %}Policy Contract Dossier: {{ policy.policy_number }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{{ url_for('policies.policy_list') }}" class="btn btn-outline btn-sm">
+    <i class="fa-solid fa-arrow-left"></i> Back to Policy Directory
+  </a>
+</div>
+
+<!-- Primary Policy Overview -->
+<div class="dossier-grid">
+  <div class="dossier-item">
+    <div class="key">Policy Number</div>
+    <div class="val">{{ policy.policy_number }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Insurance Plan Master</div>
+    <div class="val">{{ policy.plan_name }} ({{ policy.policy_type }})</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Contract Status</div>
+    <div class="val"><span class="badge badge-{{ policy.policy_status|lower }}">{{ policy.policy_status }}</span></div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Sum Assured</div>
+    <div class="val" style="color: #0f172a;">₹{{ "{:,.2f}".format(policy.sum_assured|float) }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Contract Premium</div>
+    <div class="val" style="color: #d97706;">₹{{ "{:,.2f}".format(policy.premium_amount|float) }} ({{ policy.payment_frequency }})</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Coverage Term</div>
+    <div class="val" style="font-size: 0.88rem;">{{ policy.start_date }} to {{ policy.end_date }}</div>
+  </div>
+</div>
+
+<!-- Relational Parties Split: Customer & Servicing Agent -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+  <!-- Customer Profile Card -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-user-shield" style="margin-right: 8px;"></i> Insured Customer (Policyholder)</div>
+      <a href="{{ url_for('customers.customer_detail', customer_id=policy.customer_id) }}" class="btn btn-outline btn-sm">Profile</a>
+    </div>
+    <div class="card-body">
+      <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ policy.cust_first }} {{ policy.cust_last }}</div>
+      <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 12px;">Customer Code: {{ policy.customer_code }}</div>
+      <p style="font-size: 0.88rem; margin-bottom: 6px;"><strong>Phone:</strong> {{ policy.cust_phone }}</p>
+      <p style="font-size: 0.88rem; margin-bottom: 6px;"><strong>Email:</strong> {{ policy.cust_email }}</p>
+      <p style="font-size: 0.88rem;"><strong>Location:</strong> {{ policy.cust_city }}</p>
+    </div>
+  </div>
+
+  <!-- Agent & Branch Attribution Card -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-building-user" style="margin-right: 8px;"></i> Underwriting Agent & Branch</div>
+    </div>
+    <div class="card-body">
+      <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">{{ policy.ag_first }} {{ policy.ag_last }}</div>
+      <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 12px;">Agent Code: {{ policy.agent_code }} | License: {{ policy.license_number }}</div>
+      <p style="font-size: 0.88rem; margin-bottom: 6px;"><strong>Agency Branch:</strong> {{ policy.branch_name }} ({{ policy.branch_code }})</p>
+      <p style="font-size: 0.88rem; margin-bottom: 6px;"><strong>Branch City:</strong> {{ policy.branch_city }}</p>
+      <p style="font-size: 0.88rem;"><strong>Commission Rate:</strong> {{ policy.commission_rate }}%</p>
+    </div>
+  </div>
+</div>
+
+<!-- Beneficiaries & Allocation Shares -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-users-viewfinder" style="margin-right: 8px;"></i> Designated Beneficiaries & Entitlement Allocation (M:N)</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Beneficiary Name</th>
+            <th>Relationship to Insured</th>
+            <th>Designation</th>
+            <th>Allocation %</th>
+            <th>Calculated Entitlement Amount</th>
+            <th>Contact / National ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if beneficiaries %}
+            {% for b in beneficiaries %}
+            <tr>
+              <td style="font-weight: 700;">{{ b.beneficiary_name }}</td>
+              <td>{{ b.relationship_to_insured }}</td>
+              <td>
+                <span class="badge {% if b.is_primary == '1' %}badge-active{% else %}badge-pending{% endif %}">
+                  {% if b.is_primary == '1' %}PRIMARY{% else %}CONTINGENT{% endif %}
+                </span>
+              </td>
+              <td style="font-weight: 700; color: #0f172a;">{{ b.allocation_percentage }}%</td>
+              <td style="font-weight: 700; color: #10b981;">₹{{ "{:,.2f}".format(b.calculated_amount) }}</td>
+              <td style="font-size: 0.8rem; color: #64748b;">{{ b.contact_number }} | {{ b.national_id }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">No beneficiaries assigned to this policy.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Schedule & Payment Ledger -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-receipt" style="margin-right: 8px;"></i> Premium Billing Schedule & Payment Reconciliation</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Installment #</th>
+            <th>Due Date</th>
+            <th>Scheduled Amount</th>
+            <th>Schedule Status</th>
+            <th>Receipt / Ref No.</th>
+            <th>Payment Date</th>
+            <th>Paid Amount</th>
+            <th>Payment Mode</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if schedules %}
+            {% for s in schedules %}
+            <tr>
+              <td style="font-weight: 700;">#{{ s.installment_number }}</td>
+              <td>{{ s.due_date }}</td>
+              <td style="font-weight: 600;">₹{{ "{:,.2f}".format(s.installment_amount|float) }}</td>
+              <td><span class="badge badge-{{ s.schedule_status|lower }}">{{ s.schedule_status }}</span></td>
+              <td>
+                {% if s.payment_reference_no %}
+                  <span style="font-family: monospace; font-size: 0.8rem; font-weight: 600;">{{ s.payment_reference_no }}</span>
+                {% else %}
+                  <span style="color: #94a3b8; font-style: italic;">Unpaid</span>
+                {% endif %}
+              </td>
+              <td>{{ s.payment_date or '-' }}</td>
+              <td style="font-weight: 600;">
+                {% if s.amount_paid %}₹{{ "{:,.2f}".format(s.amount_paid|float) }}{% else %}-{% endif %}
+              </td>
+              <td>{{ s.payment_mode or '-' }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 20px;">No premium schedules found for this policy.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Renewals History -->
+{% if renewals %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-arrows-rotate" style="margin-right: 8px;"></i> Policy Renewal History ({{ renewals|length }} Iterations)</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Renewal #</th>
+            <th>Request Date</th>
+            <th>Effective Term</th>
+            <th>Renewed Premium</th>
+            <th>Status</th>
+            <th>Underwriter Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in renewals %}
+          <tr>
+            <td style="font-weight: 700;">Iteration #{{ r.renewal_number }}</td>
+            <td>{{ r.renewal_request_date }}</td>
+            <td>{{ r.effective_from }} to {{ r.effective_to }}</td>
+            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(r.renewed_premium_amount|float) }}</td>
+            <td><span class="badge badge-{{ r.renewal_status|lower }}">{{ r.renewal_status }}</span></td>
+            <td style="font-size: 0.82rem; color: #64748b;">{{ r.remarks or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Claims Reported on this Policy -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-hand-holding-medical" style="margin-right: 8px;"></i> Claims Reported on Contract ({{ claims|length }} Claims)</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Claim Number</th>
+            <th>Filing Date</th>
+            <th>Claimed Amount</th>
+            <th>Status</th>
+            <th>Surveyor Appointed</th>
+            <th>Recommended Payout</th>
+            <th>Settlement Voucher</th>
+            <th>Disbursed Net Payout</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if claims %}
+            {% for cl in claims %}
+            <tr>
+              <td style="font-weight: 700;">{{ cl.claim_number }}</td>
+              <td>{{ cl.filing_date }}</td>
+              <td style="font-weight: 600;">₹{{ "{:,.2f}".format(cl.claimed_amount|float) }}</td>
+              <td><span class="badge badge-{{ cl.claim_status|lower }}">{{ cl.claim_status }}</span></td>
+              <td>{{ cl.assessor_name or '<span style="color: #94a3b8;">None</span>'|safe }}</td>
+              <td>{% if cl.recommended_amount %}₹{{ "{:,.2f}".format(cl.recommended_amount|float) }}{% else %}-{% endif %}</td>
+              <td>{{ cl.settlement_number or '<span style="color: #94a3b8;">Pending</span>'|safe }}</td>
+              <td style="font-weight: 700; color: #10b981;">
+                {% if cl.net_paid_amount %}₹{{ "{:,.2f}".format(cl.net_paid_amount|float) }}{% else %}-{% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('claims.claim_detail', claim_id=cl.claim_id) }}" class="btn btn-outline btn-sm">
+                  Lifecycle
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="9" style="text-align: center; color: #64748b; padding: 20px;">Zero claims reported against this policy contract.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

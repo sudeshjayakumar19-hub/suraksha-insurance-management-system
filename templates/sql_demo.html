@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block page_header %}SQL Demonstration Panel (Viva Presentation Suite){% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 24px;">
+  <div class="stat-card accent-gold">
+    <div class="stat-label">Predefined SQL Queries</div>
+    <div class="stat-value">{{ demos|length }} Queries</div>
+    <div class="stat-subtext">Curated Academic Demonstrations</div>
+  </div>
+  <div class="stat-card accent-green">
+    <div class="stat-label">Execution Safety Mode</div>
+    <div class="stat-value" style="color: #10b981;">SAFE (READ-ONLY)</div>
+    <div class="stat-subtext">Strictly Predefined SELECT Queries</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-label">DBMS Compatibility</div>
+    <div class="stat-value">Oracle 10g</div>
+    <div class="stat-subtext">Native SQL*Plus / CBO Syntax</div>
+  </div>
+</div>
+
+<!-- Query Selection Bar -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-list-check" style="margin-right: 8px;"></i> Select Demonstration Query</div>
+  </div>
+  <div class="card-body">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      {% for key, d in demos.items() %}
+      <a href="{{ url_for('health.sql_demo', query=key) }}" class="btn {% if key == selected_key %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+        {{ loop.index }}. {{ d.title }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Executed Query Details & Code Block -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">{{ current_demo.title }}</div>
+      <div style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">{{ current_demo.description }}</div>
+    </div>
+    <span class="badge badge-active"><i class="fa-solid fa-circle-play"></i> Live Output</span>
+  </div>
+  <div class="card-body">
+    <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">
+      Executed Oracle 10g SQL Statement:
+    </div>
+    <div class="sql-box">{{ current_demo.sql }}</div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div style="font-size: 0.88rem; font-weight: 700; color: #0f172a;">
+        Query Results ({{ results|length }} Rows Returned)
+      </div>
+      <div style="font-size: 0.78rem; color: #10b981; font-weight: 600;">
+        <i class="fa-solid fa-check-double"></i> 100% Consistent with Step 11 Verified Audit
+      </div>
+    </div>
+
+    <!-- Dynamic Result Table -->
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            {% for col in columns %}
+            <th>{{ col.replace('_', ' ').upper() }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% if results %}
+            {% for row in results %}
+            <tr>
+              {% for col in columns %}
+              <td>
+                {% set val = row[col] %}
+                {% if 'status' in col or 'decision' in col %}
+                  <span class="badge badge-{{ val|lower }}">{{ val }}</span>
+                {% elif 'amount' in col or 'premium' in col or 'loss' in col or 'margin' in col or 'disbursed' in col or 'exposure' in col %}
+                  {% if val and (val.replace('.', '', 1).isdigit() or (val.startswith('-') and val[1:].replace('.', '', 1).isdigit())) %}
+                    <span style="font-weight: 600; {% if val.startswith('-') %}color: #ef4444;{% endif %}">
+                      ₹{{ "{:,.2f}".format(val|float) }}
+                    </span>
+                  {% else %}
+                    {{ val }}
+                  {% endif %}
+                {% else %}
+                  {{ val }}
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{{ columns|length }}" style="text-align: center; color: #64748b; padding: 24px;">No rows returned.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

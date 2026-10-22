@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block page_header %}Executive Business Reports & Analytics{% endblock %}
+
+{% block content %}
+<!-- Report Selector Tabs -->
+<div style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+  {% for key, rep in registry.items() %}
+  <a href="{{ url_for('reports.report_view', type=key) }}" class="btn {% if key == active_key %}btn-primary{% else %}btn-outline{% endif %} btn-sm">
+    {{ loop.index }}. {{ rep.title.split('(')[0].split('&')[0].strip() }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Active Report Details Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">{{ current_report.title }}</div>
+      <div style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">{{ current_report.description }}</div>
+    </div>
+    <span class="badge badge-active"><i class="fa-solid fa-bolt"></i> Live Oracle 10g Query</span>
+  </div>
+  <div class="card-body">
+    <!-- Collapsible SQL Statement Box -->
+    <details style="margin-bottom: 20px;">
+      <summary style="cursor: pointer; font-size: 0.84rem; font-weight: 600; color: #3b82f6; user-select: none;">
+        <i class="fa-solid fa-code"></i> View Executed Oracle 10g SQL Query
+      </summary>
+      <div class="sql-box" style="margin-top: 10px;">{{ current_report.sql }}</div>
+    </details>
+
+    <!-- Dynamic Results Table -->
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            {% for col in columns %}
+            <th>{{ col.replace('_', ' ').upper() }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% if report_data %}
+            {% for row in report_data %}
+            <tr>
+              {% for col in columns %}
+              <td>
+                {% set val = row[col] %}
+                {% if 'status' in col or 'decision' in col %}
+                  <span class="badge badge-{{ val|lower }}">{{ val }}</span>
+                {% elif 'amount' in col or 'premium' in col or 'loss' in col or 'margin' in col or 'disbursed' in col or 'exposure' in col %}
+                  {% if val and (val.replace('.', '', 1).isdigit() or (val.startswith('-') and val[1:].replace('.', '', 1).isdigit())) %}
+                    <span style="font-weight: 600; {% if val.startswith('-') %}color: #ef4444;{% endif %}">
+                      ₹{{ "{:,.2f}".format(val|float) }}
+                    </span>
+                  {% else %}
+                    {{ val }}
+                  {% endif %}
+                {% else %}
+                  {{ val }}
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{{ columns|length }}" style="text-align: center; color: #64748b; padding: 24px;">No records returned by query.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

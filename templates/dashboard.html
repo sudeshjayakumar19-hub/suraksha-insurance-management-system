@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block page_header %}Executive Dashboard & Operational Overview{% endblock %}
+
+{% block content %}
+<!-- Top Statistics Grid -->
+<div class="stats-grid">
+  <div class="stat-card accent-blue">
+    <div class="stat-label"><i class="fa-solid fa-users" style="margin-right: 6px;"></i> Total Customers</div>
+    <div class="stat-value">{{ counts.customers }}</div>
+    <div class="stat-subtext">Across 5 Metro Regions</div>
+  </div>
+
+  <div class="stat-card accent-gold">
+    <div class="stat-label"><i class="fa-solid fa-file-contract" style="margin-right: 6px;"></i> Active & Total Policies</div>
+    <div class="stat-value">{{ counts.policies }}</div>
+    <div class="stat-subtext">Life, Health, Motor, Property</div>
+  </div>
+
+  <div class="stat-card accent-green">
+    <div class="stat-label"><i class="fa-solid fa-money-bill-wave" style="margin-right: 6px;"></i> Premium Collected</div>
+    <div class="stat-value">₹{{ "{:,.2f}".format(financials.collected_premium) }}</div>
+    <div class="stat-subtext">Scheduled: ₹{{ "{:,.2f}".format(financials.scheduled_premium) }}</div>
+  </div>
+
+  <div class="stat-card accent-red">
+    <div class="stat-label"><i class="fa-solid fa-hand-holding-medical" style="margin-right: 6px;"></i> Total Claims Exposure</div>
+    <div class="stat-value">₹{{ "{:,.2f}".format(financials.claimed_exposure) }}</div>
+    <div class="stat-subtext">{{ counts.claims }} Total Claims Filed</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label"><i class="fa-solid fa-money-check-dollar" style="margin-right: 6px;"></i> Settlements Disbursed</div>
+    <div class="stat-value">₹{{ "{:,.2f}".format(financials.settlement_disbursed) }}</div>
+    <div class="stat-subtext">{{ counts.settlements }} Disbursed Vouchers</div>
+  </div>
+
+  <div class="stat-card {% if financials.net_margin >= 0 %}accent-green{% else %}accent-red{% endif %}">
+    <div class="stat-label"><i class="fa-solid fa-scale-balanced" style="margin-right: 6px;"></i> Net Underwriting Margin</div>
+    <div class="stat-value" style="color: {% if financials.net_margin >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+      ₹{{ "{:,.2f}".format(financials.net_margin) }}
+    </div>
+    <div class="stat-subtext">Cash Receipts Minus Disbursements</div>
+  </div>
+</div>
+
+<!-- Secondary Statistics Row -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+  <div class="dossier-item">
+    <div class="key">Licensed Agents</div>
+    <div class="val">{{ counts.agents }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Regional Branches</div>
+    <div class="val">{{ counts.branches }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Insurance Plans</div>
+    <div class="val">{{ counts.plans }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Beneficiaries</div>
+    <div class="val">{{ counts.beneficiaries }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Claim Surveyors</div>
+    <div class="val">{{ counts.assessments }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Total DB Rows</div>
+    <div class="val" style="color: #10b981;">223</div>
+  </div>
+</div>
+
+<!-- Main Content Split: Recent Policies & Claims -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+  <!-- Recent Policies -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-file-signature" style="margin-right: 8px;"></i> Recent Underwriting Policies</div>
+      <a href="{{ url_for('policies.policy_list') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Policy #</th>
+              <th>Customer</th>
+              <th>Plan</th>
+              <th>Sum Assured</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in recent_policies %}
+            <tr>
+              <td><a href="{{ url_for('policies.policy_detail', policy_id=p.policy_id) }}" style="font-weight: 600; color: #0f172a;">{{ p.policy_number }}</a></td>
+              <td>{{ p.customer_name }}</td>
+              <td><span style="font-size: 0.8rem; color: #64748b;">{{ p.plan_name }}</span></td>
+              <td>₹{{ "{:,.2f}".format(p.sum_assured|float) }}</td>
+              <td><span class="badge badge-{{ p.policy_status|lower }}">{{ p.policy_status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Claims -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <div class="card-title"><i class="fa-solid fa-truck-medical" style="margin-right: 8px;"></i> Recent Reported Claims</div>
+      <a href="{{ url_for('claims.claim_list') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Claim #</th>
+              <th>Policy #</th>
+              <th>Filing Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cl in recent_claims %}
+            <tr>
+              <td><a href="{{ url_for('claims.claim_detail', claim_id=cl.claim_id) }}" style="font-weight: 600; color: #0f172a;">{{ cl.claim_number }}</a></td>
+              <td>{{ cl.policy_number }}</td>
+              <td>{{ cl.filing_date }}</td>
+              <td>₹{{ "{:,.2f}".format(cl.claimed_amount|float) }}</td>
+              <td><span class="badge badge-{{ cl.claim_status|lower }}">{{ cl.claim_status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Claims Status Pipeline Distribution -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-bars-progress" style="margin-right: 8px;"></i> Claims Adjudication Pipeline Summary</div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Adjudication Stage</th>
+            <th>Number of Claims</th>
+            <th>Total Exposure Amount</th>
+            <th>Workflow Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in claim_status_dist %}
+          <tr>
+            <td><span class="badge badge-{{ s.claim_status|lower }}">{{ s.claim_status }}</span></td>
+            <td style="font-weight: 700;">{{ s.count }}</td>
+            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(s.total_amount|float) }}</td>
+            <td style="color: #64748b; font-size: 0.84rem;">
+              {% if s.claim_status == 'SETTLED' %}Loss appraised, deductibles calculated, and banking funds transferred.
+              {% elif s.claim_status == 'APPROVED' %}Assessment accepted; awaiting finance voucher generation.
+              {% elif s.claim_status == 'ASSESSED' %}Surveyor loss report submitted; under managerial review.
+              {% elif s.claim_status == 'UNDER_ASSESSMENT' %}Independent surveyor appointed; field inspection in progress.
+              {% elif s.claim_status == 'SUBMITTED' %}Initial intake completed; awaiting surveyor appointment.
+              {% elif s.claim_status == 'REJECTED' %}Repudiated due to contractual exclusion or fraudulent claim.{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

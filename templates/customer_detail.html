@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block page_header %}Customer Dossier: {{ customer.first_name }} {{ customer.last_name }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{{ url_for('customers.customer_list') }}" class="btn btn-outline btn-sm">
+    <i class="fa-solid fa-arrow-left"></i> Back to Customer Directory
+  </a>
+</div>
+
+<!-- Customer Profile Header Cards -->
+<div class="dossier-grid">
+  <div class="dossier-item">
+    <div class="key">Customer Code</div>
+    <div class="val">{{ customer.customer_code }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">National Identification / PAN</div>
+    <div class="val">{{ customer.national_id }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">KYC Verification Status</div>
+    <div class="val"><span class="badge badge-{{ customer.kyc_status|lower }}">{{ customer.kyc_status }}</span></div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Total Portfolio Sum Assured</div>
+    <div class="val" style="color: #0f172a;">₹{{ "{:,.2f}".format(total_coverage) }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Annual Premium Outlay</div>
+    <div class="val" style="color: #d97706;">₹{{ "{:,.2f}".format(total_premium) }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Contact Info</div>
+    <div class="val" style="font-size: 0.88rem;">{{ customer.phone_number }} | {{ customer.email }}</div>
+  </div>
+</div>
+
+<!-- Subscribed Policies (Customer -> Policy -> Policy Plan) -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-file-contract" style="margin-right: 8px;"></i>
+      Underwritten Insurance Contracts ({{ policies|length }} Policies)
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Policy Number</th>
+            <th>Plan Name</th>
+            <th>Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Sum Assured</th>
+            <th>Premium</th>
+            <th>Servicing Agent</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if policies %}
+            {% for p in policies %}
+            <tr>
+              <td style="font-weight: 700;">{{ p.policy_number }}</td>
+              <td>{{ p.plan_name }}</td>
+              <td><span style="font-size: 0.78rem; font-weight: 600; color: #475569;">{{ p.policy_type }}</span></td>
+              <td>{{ p.start_date }}</td>
+              <td>{{ p.end_date }}</td>
+              <td style="font-weight: 600;">₹{{ "{:,.2f}".format(p.sum_assured|float) }}</td>
+              <td>₹{{ "{:,.2f}".format(p.premium_amount|float) }}</td>
+              <td style="font-size: 0.82rem;">{{ p.agent_name }} ({{ p.agent_code }})</td>
+              <td><span class="badge badge-{{ p.policy_status|lower }}">{{ p.policy_status }}</span></td>
+              <td>
+                <a href="{{ url_for('policies.policy_detail', policy_id=p.policy_id) }}" class="btn btn-outline btn-sm">
+                  Details
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="10" style="text-align: center; color: #64748b; padding: 24px;">No policies found for this customer.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Claims History for this Customer -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-hand-holding-medical" style="margin-right: 8px;"></i>
+      Associated Claims History ({{ claims|length }} Claims)
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Claim Number</th>
+            <th>Policy Number</th>
+            <th>Plan Covered</th>
+            <th>Incident Date</th>
+            <th>Filing Date</th>
+            <th>Claimed Exposure</th>
+            <th>Adjudication Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if claims %}
+            {% for cl in claims %}
+            <tr>
+              <td style="font-weight: 700;">{{ cl.claim_number }}</td>
+              <td>{{ cl.policy_number }}</td>
+              <td>{{ cl.plan_name }}</td>
+              <td>{{ cl.incident_date }}</td>
+              <td>{{ cl.filing_date }}</td>
+              <td style="font-weight: 600;">₹{{ "{:,.2f}".format(cl.claimed_amount|float) }}</td>
+              <td><span class="badge badge-{{ cl.claim_status|lower }}">{{ cl.claim_status }}</span></td>
+              <td>
+                <a href="{{ url_for('claims.claim_detail', claim_id=cl.claim_id) }}" class="btn btn-outline btn-sm">
+                  View Lifecycle
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 24px;">Zero claims reported against this customer's portfolio.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

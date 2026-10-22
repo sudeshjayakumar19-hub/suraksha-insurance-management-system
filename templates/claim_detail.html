@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block page_header %}Claim Lifecycle Dossier: {{ claim.claim_number }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{{ url_for('claims.claim_list') }}" class="btn btn-outline btn-sm">
+    <i class="fa-solid fa-arrow-left"></i> Back to Claims Pipeline
+  </a>
+</div>
+
+<!-- Lifecycle Status Progress Bar / Milestones -->
+<div class="card" style="margin-bottom: 24px; background: linear-gradient(to right, #0f172a, #1e293b); color: #ffffff;">
+  <div class="card-body" style="padding: 20px 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8;">Current Lifecycle Milestone</div>
+        <div style="font-size: 1.5rem; font-weight: 700; margin-top: 4px; color: #f59e0b;">
+          {{ claim.claim_status }}
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8;">Total Exposure Claimed</div>
+        <div style="font-size: 1.5rem; font-weight: 700; margin-top: 4px; color: #ffffff;">
+          ₹{{ "{:,.2f}".format(claim.claimed_amount|float) }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary Claim & Policy Details -->
+<div class="dossier-grid">
+  <div class="dossier-item">
+    <div class="key">Claim Number</div>
+    <div class="val">{{ claim.claim_number }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Incident Date</div>
+    <div class="val">{{ claim.incident_date }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Filing Date</div>
+    <div class="val">{{ claim.filing_date }}</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Insured Policy</div>
+    <div class="val">
+      <a href="{{ url_for('policies.policy_detail', policy_id=claim.policy_id) }}" style="color: #3b82f6;">
+        {{ claim.policy_number }}
+      </a>
+    </div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Plan Covered</div>
+    <div class="val">{{ claim.plan_name }} ({{ claim.policy_type }})</div>
+  </div>
+  <div class="dossier-item">
+    <div class="key">Policyholder</div>
+    <div class="val">{{ claim.cust_first }} {{ claim.cust_last }} ({{ claim.customer_code }})</div>
+  </div>
+</div>
+
+<!-- Loss Incident Description -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-file-lines" style="margin-right: 8px;"></i> Incident Description & Narrative</div>
+  </div>
+  <div class="card-body">
+    <p style="font-size: 0.92rem; color: #334155; line-height: 1.6;">
+      {{ claim.claim_description or 'Standard insurance claim filed under contractual terms.' }}
+    </p>
+  </div>
+</div>
+
+<!-- Stage 1: Evidentiary Documents Dossier (CLAIM -> CLAIM_DOCUMENT) -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-folder-open" style="margin-right: 8px;"></i>
+      Stage 1: Evidentiary Proof Dossier ({{ documents|length }} Documents)
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Document ID</th>
+            <th>Document Type</th>
+            <th>Title / Description</th>
+            <th>Archived File Path</th>
+            <th>Upload Date</th>
+            <th>Verification Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if documents %}
+            {% for d in documents %}
+            <tr>
+              <td style="font-weight: 700;">#{{ d.document_id }}</td>
+              <td><span style="font-size: 0.8rem; font-weight: 600; color: #475569;">{{ d.document_type }}</span></td>
+              <td style="font-weight: 600;">{{ d.document_title }}</td>
+              <td style="font-family: monospace; font-size: 0.78rem; color: #64748b;">{{ d.file_storage_path }}</td>
+              <td>{{ d.uploaded_date }}</td>
+              <td>
+                <span class="badge badge-{{ d.verification_status|lower }}">
+                  <i class="fa-solid fa-circle-check"></i> {{ d.verification_status }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">No documents attached to this claim.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Stage 2: Independent Surveyor Assessment (CLAIM -> CLAIM_ASSESSMENT 1:0..1) -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-user-doctor" style="margin-right: 8px;"></i>
+      Stage 2: Independent Loss Assessment & Surveyor Appraisal (1:0..1)
+    </div>
+  </div>
+  <div class="card-body">
+    {% if assessment %}
+      <div class="dossier-grid">
+        <div class="dossier-item">
+          <div class="key">Licensed Assessor</div>
+          <div class="val">{{ assessment.assessor_name }}</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">License: {{ assessment.assessor_license_no }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Assessment Date</div>
+          <div class="val">{{ assessment.assessment_date }}</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Inspected: {{ assessment.inspection_date }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Appraised Gross Loss</div>
+          <div class="val">₹{{ "{:,.2f}".format(assessment.assessed_loss_amount|float) }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Recommended Payout</div>
+          <div class="val" style="color: #10b981;">₹{{ "{:,.2f}".format(assessment.recommended_amount|float) }}</div>
+        </div>
+        <div class="dossier-item" style="grid-column: span 2;">
+          <div class="key">Assessment Recommendation</div>
+          <div class="val">
+            <span class="badge {% if 'APPROVE' in assessment.assessment_decision %}badge-active{% else %}badge-rejected{% endif %}">
+              {{ assessment.assessment_decision }}
+            </span>
+          </div>
+          <p style="font-size: 0.85rem; color: #475569; margin-top: 8px;">
+            <strong>Surveyor Report:</strong> {{ assessment.assessment_report_summary }}
+          </p>
+        </div>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 24px; color: #64748b;">
+        <i class="fa-solid fa-hourglass-half" style="font-size: 2rem; color: #d97706; margin-bottom: 8px;"></i>
+        <div style="font-weight: 600; font-size: 1rem;">Surveyor Assessment Pending</div>
+        <p style="font-size: 0.85rem; margin-top: 4px;">Independent licensed surveyor has not yet submitted an appraisal report for this claim.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stage 3: Claim Settlement & Banking Liquidation (CLAIM -> CLAIM_SETTLEMENT 1:0..1) -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="fa-solid fa-money-check" style="margin-right: 8px;"></i>
+      Stage 3: Financial Settlement & Banking Disbursement (1:0..1)
+    </div>
+  </div>
+  <div class="card-body">
+    {% if settlement %}
+      <div class="dossier-grid">
+        <div class="dossier-item">
+          <div class="key">Settlement Voucher #</div>
+          <div class="val" style="font-family: monospace;">{{ settlement.settlement_number }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Settlement Date</div>
+          <div class="val">{{ settlement.settlement_date }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Settlement Decision</div>
+          <div class="val">
+            <span class="badge badge-{{ settlement.settlement_decision|lower }}">
+              {{ settlement.settlement_decision }}
+            </span>
+          </div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Gross Claim Amount</div>
+          <div class="val">₹{{ "{:,.2f}".format(settlement.gross_settlement_amount|float) }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Contractual Deductible</div>
+          <div class="val" style="color: #ef4444;">-₹{{ "{:,.2f}".format(settlement.deductible_amount|float) }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Net Paid Amount (Liquidated)</div>
+          <div class="val" style="color: #10b981; font-size: 1.25rem;">
+            ₹{{ "{:,.2f}".format(settlement.net_paid_amount|float) }}
+          </div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Banking Channel</div>
+          <div class="val">{{ settlement.payment_channel }}</div>
+        </div>
+        <div class="dossier-item">
+          <div class="key">Disbursement UTR / Cheque No</div>
+          <div class="val" style="font-family: monospace; font-size: 0.85rem;">{{ settlement.disbursement_reference_no }}</div>
+        </div>
+      </div>
+      {% if settlement.remarks %}
+      <div style="background-color: #f8fafc; border: 1px solid var(--border); padding: 12px 16px; border-radius: 6px; font-size: 0.85rem; color: #475569;">
+        <strong>Settlement Remarks:</strong> {{ settlement.remarks }}
+      </div>
+      {% endif %}
+    {% else %}
+      <div style="text-align: center; padding: 24px; color: #64748b;">
+        <i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; color: #d97706; margin-bottom: 8px;"></i>
+        <div style="font-weight: 600; font-size: 1rem;">Settlement: Pending / Under Adjudication</div>
+        <p style="font-size: 0.85rem; margin-top: 4px;">Financial liquidation voucher has not been issued yet for this claim.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

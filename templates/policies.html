@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block page_header %}Policy Portfolio & Underwriting Contracts{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-file-contract" style="margin-right: 8px;"></i> Insurance Contracts (40 Records)</div>
+  </div>
+  <div class="card-body">
+    <!-- Search and Status Filter Form -->
+    <form method="GET" action="{{ url_for('policies.policy_list') }}" class="search-bar">
+      <input type="text" name="q" value="{{ search }}" class="form-control" style="flex: 2;" placeholder="Search by policy number (e.g. POL-2020-001) or customer name...">
+
+      <select name="status" class="form-control" style="flex: 1;">
+        <option value="">All Statuses</option>
+        <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+        <option value="EXPIRED" {% if status_filter == 'EXPIRED' %}selected{% endif %}>EXPIRED</option>
+        <option value="TERMINATED" {% if status_filter == 'TERMINATED' %}selected{% endif %}>TERMINATED</option>
+        <option value="LAPSED" {% if status_filter == 'LAPSED' %}selected{% endif %}>LAPSED</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filter</button>
+      {% if search or status_filter %}
+      <a href="{{ url_for('policies.policy_list') }}" class="btn btn-outline">Reset</a>
+      {% endif %}
+    </form>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Policy Number</th>
+            <th>Customer</th>
+            <th>Plan & Type</th>
+            <th>Servicing Agent</th>
+            <th>Duration</th>
+            <th>Sum Assured</th>
+            <th>Premium</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in policies %}
+          <tr>
+            <td style="font-weight: 700;">
+              <a href="{{ url_for('policies.policy_detail', policy_id=p.policy_id) }}" style="color: #0f172a;">
+                {{ p.policy_number }}
+              </a>
+            </td>
+            <td>
+              <a href="{{ url_for('customers.customer_detail', customer_id=p.customer_id) }}" style="font-weight: 600; color: #3b82f6;">
+                {{ p.customer_name }}
+              </a>
+              <div style="font-size: 0.75rem; color: #64748b;">{{ p.customer_code }}</div>
+            </td>
+            <td>
+              <div style="font-weight: 600;">{{ p.plan_name }}</div>
+              <span style="font-size: 0.75rem; color: #64748b;">{{ p.policy_type }}</span>
+            </td>
+            <td>{{ p.agent_name }}</td>
+            <td style="font-size: 0.8rem;">
+              {{ p.start_date }}<br><span style="color: #64748b;">to {{ p.end_date }}</span>
+            </td>
+            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(p.sum_assured|float) }}</td>
+            <td>₹{{ "{:,.2f}".format(p.premium_amount|float) }} <span style="font-size: 0.72rem; color: #64748b;">/ {{ p.payment_frequency }}</span></td>
+            <td><span class="badge badge-{{ p.policy_status|lower }}">{{ p.policy_status }}</span></td>
+            <td>
+              <a href="{{ url_for('policies.policy_detail', policy_id=p.policy_id) }}" class="btn btn-outline btn-sm">
+                <i class="fa-solid fa-circle-info"></i> Full Dossier
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
