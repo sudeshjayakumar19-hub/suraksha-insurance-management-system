@@ -8,7 +8,7 @@ dashboard_bp = Blueprint("dashboard", __name__)
 def index():
     # 1. Combined single-query metrics from DUAL for sub-second page loads
     meta = query("""
-        SELECT
+        SELECT 
           (SELECT COUNT(*) FROM customer) AS customers,
           (SELECT COUNT(*) FROM policy) AS policies,
           (SELECT COUNT(*) FROM beneficiary) AS beneficiaries,
@@ -58,6 +58,40 @@ def index():
     }
     financials["net_margin"] = financials["collected_premium"] - financials["settlement_disbursed"]
 
+    # 2. Visual Charts Datasets
+    # Graph 1: Policy Status Breakdown
+    policy_status_dist = query("""
+        SELECT policy_status, COUNT(*) AS count 
+        FROM policy 
+        GROUP BY policy_status 
+        ORDER BY count DESC
+    """)
+
+    # Graph 2: Premium Underwriting by Insurance Line
+    policy_type_dist = query("""
+        SELECT pp.policy_type, COUNT(p.policy_id) AS policy_count, NVL(SUM(p.premium_amount), 0) AS total_premium 
+        FROM policy_plan pp 
+        LEFT JOIN policy p ON pp.plan_id = p.plan_id 
+        GROUP BY pp.policy_type 
+        ORDER BY total_premium DESC
+    """)
+
+    # Graph 3: Claims Status Pipeline
+    claim_status_dist = query("""
+        SELECT claim_status, COUNT(*) AS count, NVL(SUM(claimed_amount), 0) AS total_amount
+        FROM claim
+        GROUP BY claim_status
+        ORDER BY count DESC
+    """)
+
+    # Graph 4: Payment Modalities & Rails
+    channel_dist = query("""
+        SELECT payment_mode AS channel, COUNT(*) AS count, NVL(SUM(amount_paid), 0) AS total_amount
+        FROM premium_payment
+        GROUP BY payment_mode
+        ORDER BY count DESC
+    """)
+
     # 3. Recent policies table
     recent_policies = query("""
         SELECT p.policy_id, p.policy_number, c.first_name || ' ' || c.last_name AS customer_name,
@@ -79,19 +113,14 @@ def index():
         ORDER BY cl.filing_date DESC
     """)
 
-    # 5. Claims by status distribution
-    claim_status_dist = query("""
-        SELECT claim_status, COUNT(*) AS count, NVL(SUM(claimed_amount), 0) AS total_amount
-        FROM claim
-        GROUP BY claim_status
-        ORDER BY count DESC
-    """)
-
     return render_template(
         "dashboard.html",
         counts=counts,
         financials=financials,
+        policy_status_dist=policy_status_dist,
+        policy_type_dist=policy_type_dist,
+        claim_status_dist=claim_status_dist,
+        channel_dist=channel_dist,
         recent_policies=recent_policies,
-        recent_claims=recent_claims,
-        claim_status_dist=claim_status_dist
+        recent_claims=recent_claims
     )

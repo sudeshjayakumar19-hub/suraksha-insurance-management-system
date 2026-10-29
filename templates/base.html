@@ -3,9 +3,213 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Insurance Policy & Claims Management{% endblock %} | Oracle 10g</title>
+  <title>{% block title %}Insurance Policy & Claims Management{% endblock %} | Suraksha Oracle 10g</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN for interactive visual graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Modal & Action Button Styles */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 14px;
+      width: 95%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      padding: 18px 24px;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #d97706;
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: #ffffff; }
+    .modal-body {
+      padding: 24px;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group-modal {
+      margin-bottom: 14px;
+    }
+    .form-group-modal label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    .form-group-modal input, .form-group-modal select, .form-group-modal textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #0f172a;
+      background: #f8fafc;
+      box-sizing: border-box;
+    }
+    .form-group-modal input:focus, .form-group-modal select:focus, .form-group-modal textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn-delete {
+      background: none;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .btn-delete:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+    .btn-action-sm {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn-action-sm:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    .btn-action-success {
+      border-color: #a7f3d0;
+      color: #059669;
+    }
+    .btn-action-success:hover {
+      background: #059669;
+      color: #ffffff;
+      border-color: #059669;
+    }
+    .btn-action-warning {
+      border-color: #fde68a;
+      color: #d97706;
+    }
+    .btn-action-warning:hover {
+      background: #d97706;
+      color: #ffffff;
+      border-color: #d97706;
+    }
+    .nav-section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 16px 24px 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .search-pill-box {
+      position: relative;
+      min-width: 280px;
+    }
+    .search-pill-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+    .search-pill-input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      font-size: 0.85rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+    .search-pill-input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+  </style>
 </head>
 <body>
   <!-- Sidebar Navigation -->
@@ -15,41 +219,52 @@
         <i class="fa-solid fa-shield-halved accent-text"></i>
         <span>SURAKSHA <span class="accent-text">INSURE</span></span>
       </div>
-      <div class="sidebar-subbrand">DBMS Project Platform</div>
+      <div class="sidebar-subbrand">Enterprise Insurance System</div>
     </div>
 
     <nav class="sidebar-nav">
+      <div class="nav-section-title">Executive & Core</div>
       <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.path in ['/', '/dashboard'] %}active{% endif %}">
         <i class="fa-solid fa-chart-pie"></i>
-        <span>Dashboard</span>
+        <span>Dashboard & Graphs</span>
       </a>
+      <a href="{{ url_for('reports.report_view') }}" class="nav-item {% if '/reports' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Reports & Analytics</span>
+      </a>
+
+      <div class="nav-section-title">Operations & Underwriting</div>
       <a href="{{ url_for('customers.customer_list') }}" class="nav-item {% if '/customers' in request.path %}active{% endif %}">
         <i class="fa-solid fa-users"></i>
-        <span>Customers</span>
+        <span>Policyholders</span>
       </a>
       <a href="{{ url_for('policies.policy_list') }}" class="nav-item {% if '/policies' in request.path %}active{% endif %}">
         <i class="fa-solid fa-file-contract"></i>
-        <span>Policies</span>
+        <span>Policies Portfolio</span>
       </a>
       <a href="{{ url_for('beneficiaries.beneficiary_list') }}" class="nav-item {% if '/beneficiaries' in request.path %}active{% endif %}">
         <i class="fa-solid fa-handshake-angle"></i>
         <span>Beneficiaries</span>
       </a>
+
+      <div class="nav-section-title">Finance & Claims</div>
       <a href="{{ url_for('premiums.premium_list') }}" class="nav-item {% if '/premiums' in request.path %}active{% endif %}">
         <i class="fa-solid fa-money-bill-transfer"></i>
-        <span>Premiums</span>
+        <span>Premium Collections</span>
       </a>
       <a href="{{ url_for('claims.claim_list') }}" class="nav-item {% if '/claims' in request.path %}active{% endif %}">
         <i class="fa-solid fa-hand-holding-medical"></i>
-        <span>Claims</span>
+        <span>Claims Adjudication</span>
       </a>
-      <a href="{{ url_for('reports.report_view') }}" class="nav-item {% if '/reports' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-chart-line"></i>
-        <span>Reports</span>
+
+      <div class="nav-section-title">Security & System</div>
+      <a href="{{ url_for('auth.user_list') }}" class="nav-item {% if '/users' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-id-card-clip"></i>
+        <span>Authorized Personnel</span>
       </a>
       <a href="{{ url_for('health.sql_demo') }}" class="nav-item {% if '/sql-demo' in request.path %}active{% endif %}">
         <i class="fa-solid fa-terminal"></i>
-        <span>SQL Demo</span>
+        <span>SQL Console</span>
       </a>
       <a href="{{ url_for('health.db_health') }}" class="nav-item {% if '/health' in request.path %}active{% endif %}">
         <i class="fa-solid fa-database"></i>
@@ -58,11 +273,18 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div>Backend Engine:</div>
+      {% if session.get('user') %}
+      <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 4px;">Authorized Session:</div>
+      <div style="color: #ffffff; font-weight: 600; font-size: 0.85rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{ session['user']['badge_color'] }};"></span>
+        <span>{{ session['user']['name'] }}</span>
+      </div>
+      {% endif %}
+      <div style="font-size: 0.72rem; color: #94a3b8;">Database Engine:</div>
       <div style="color: #ffffff; font-weight: 600; margin-top: 2px;">Oracle Database 10g</div>
       <div class="db-pill">
         <span class="pulse-dot"></span>
-        <span>SCOTT @ ORCL (223 Rows)</span>
+        <span>SCOTT @ ORCL (Active)</span>
       </div>
     </div>
   </aside>
@@ -72,20 +294,129 @@
     <header class="top-navbar">
       <div class="page-title">{% block page_header %}Insurance Management System{% endblock %}</div>
       <div class="top-actions">
+        <!-- Live Clock -->
+        <div class="badge-db" style="background-color: #f1f5f9; color: #475569; border-color: #e2e8f0; font-family: monospace;">
+          <i class="fa-regular fa-clock" style="color: #2563eb; margin-right: 6px;"></i>
+          <span id="digitalClock">--:--:--</span>
+        </div>
+
+        {% if session.get('user') %}
+        <div class="badge-db" style="background-color: #0f172a; color: #ffffff; border-color: #334155;">
+          <i class="fa-solid fa-user-shield" style="color: {{ session['user']['badge_color'] }}; margin-right: 6px;"></i>
+          <span><strong>{{ session['user']['name'] }}</strong> ({{ session['user']['badge'] }})</span>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; color: #0f172a; background: #ffffff; transition: all 0.2s ease;">
+          <i class="fa-solid fa-right-from-bracket" style="color: #ef4444;"></i>
+          <span>Sign Out</span>
+        </a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 6px; background: #0f172a; color: #ffffff; transition: all 0.2s ease;">
+          <i class="fa-solid fa-right-to-bracket" style="color: #f59e0b;"></i>
+          <span>Sign In</span>
+        </a>
+        {% endif %}
         <div class="badge-db">
           <i class="fa-solid fa-server" style="color: #10b981; margin-right: 6px;"></i>
-          <span>Live Oracle 10.2.0.1.0</span>
-        </div>
-        <div class="badge-db" style="background-color: rgba(217, 119, 6, 0.1); color: #d97706; border-color: rgba(217, 119, 6, 0.3);">
-          <i class="fa-solid fa-lock" style="margin-right: 4px;"></i>
-          <span>READ-ONLY VIVA MODE</span>
+          <span>Live Oracle 10g</span>
         </div>
       </div>
     </header>
 
     <main class="content-body">
+      <!-- Flash Messages / Notification Alerts -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; font-size: 0.92rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            {% if category == 'success' %}background-color: #ecfdf5; color: #065f46; border: 1px solid #10b981;
+            {% elif category == 'danger' %}background-color: #fef2f2; color: #991b1b; border: 1px solid #ef4444;
+            {% elif category == 'warning' %}background-color: #fffbeb; color: #92400e; border: 1px solid #f59e0b;
+            {% else %}background-color: #eff6ff; color: #1e40af; border: 1px solid #3b82f6;{% endif %}">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              {% if category == 'success' %}<i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.1rem;"></i>
+              {% elif category == 'danger' %}<i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 1.1rem;"></i>
+              {% elif category == 'warning' %}<i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 1.1rem;"></i>
+              {% else %}<i class="fa-solid fa-circle-info" style="color: #3b82f6; font-size: 1.1rem;"></i>{% endif %}
+              <span>{{ message }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; opacity: 0.6;">&times;</button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <!-- Global Interactive Utilities -->
+  <script>
+    // Live Digital Clock
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false }) + ' IST';
+      const el = document.getElementById('digitalClock');
+      if (el) el.textContent = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Universal Real-Time Table Filter
+    function filterTable(inputId, tableId, countSpanId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const rows = table.getElementsByTagName("tbody")[0]?.getElementsByTagName("tr") || [];
+      let visibleCount = 0;
+
+      for (let i = 0; i < rows.length; i++) {
+        const text = rows[i].textContent || rows[i].innerText;
+        if (text.toUpperCase().indexOf(filter) > -1) {
+          rows[i].style.display = "";
+          visibleCount++;
+        } else {
+          rows[i].style.display = "none";
+        }
+      }
+
+      if (countSpanId) {
+        const countEl = document.getElementById(countSpanId);
+        if (countEl) countEl.textContent = visibleCount;
+      }
+    }
+
+    // Universal Export Table to CSV
+    function exportTableToCSV(tableId, filename) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      let csv = [];
+      const rows = table.querySelectorAll("tr");
+
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i].style.display === "none") continue;
+        let row = [];
+        const cols = rows[i].querySelectorAll("td, th");
+        // Skip last column if it contains action buttons
+        const maxCols = cols.length > 1 && cols[cols.length - 1].innerText.includes("Action") ? cols.length - 1 : cols.length;
+
+        for (let j = 0; j < maxCols; j++) {
+          let text = cols[j].innerText.replace(/"/g, '""').replace(/\r?\n|\r/g, ' ').trim();
+          row.push('"' + text + '"');
+        }
+        csv.push(row.join(","));
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", (filename || "export") + "_" + new Date().toISOString().slice(0, 10) + ".csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
 </body>
 </html>

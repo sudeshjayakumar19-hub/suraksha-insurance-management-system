@@ -135,3 +135,17 @@ def query_scalar(sql, default=0):
 
 def query_one(sql):
     return db.execute_single_row(sql)
+
+
+def execute_dml(sql):
+    """
+    Executes INSERT, UPDATE, or DELETE statement followed by explicit COMMIT.
+    Returns True on success or raises RuntimeError on Oracle error.
+    """
+    sql_clean = sql.strip()
+    if not sql_clean.endswith(";"):
+        sql_clean += ";"
+    if "commit;" not in sql_clean.lower():
+        sql_clean += "\nCOMMIT;"
+    db.execute_query(sql_clean)
+    return True

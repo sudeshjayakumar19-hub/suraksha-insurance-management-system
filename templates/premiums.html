@@ -24,66 +24,93 @@
   </div>
 </div>
 
+<!-- Interactive Toolbar -->
+<div class="table-toolbar">
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="search-pill-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="premSearchInput" class="search-pill-input" placeholder="Real-time filter installments..." onkeyup="filterTable('premSearchInput', 'premiumsTable', 'premCount')">
+    </div>
+    <span style="font-size: 0.85rem; color: #64748b;">
+      Showing <strong id="premCount" style="color: #0f172a;">{{ schedules|length }}</strong> of {{ schedules|length }} installments
+    </span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button type="button" class="btn btn-outline btn-sm" onclick="exportTableToCSV('premiumsTable', 'Suraksha_Premium_Ledger')" title="Download as CSV">
+      <i class="fa-solid fa-file-csv" style="color: #059669;"></i>
+      <span>Export CSV</span>
+    </button>
+    <button type="button" class="btn btn-outline btn-sm" onclick="window.print()" title="Print ledger">
+      <i class="fa-solid fa-print"></i>
+      <span>Print</span>
+    </button>
+  </div>
+</div>
+
 <!-- Premium Schedule Table with Status Filtering -->
 <div class="card">
-  <div class="card-header">
-    <div class="card-title"><i class="fa-solid fa-receipt" style="margin-right: 8px;"></i> Installment Schedules & Reconciliation Ledger</div>
-  </div>
-  <div class="card-body">
-    <!-- Filter Tabs / Links -->
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-      <a href="{{ url_for('premiums.premium_list') }}" class="btn {% if not status_filter or status_filter == 'ALL' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">ALL (26)</a>
-      <a href="{{ url_for('premiums.premium_list', status='PAID') }}" class="btn {% if status_filter == 'PAID' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PAID (23)</a>
-      <a href="{{ url_for('premiums.premium_list', status='PENDING') }}" class="btn {% if status_filter == 'PENDING' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PENDING (1)</a>
-      <a href="{{ url_for('premiums.premium_list', status='OVERDUE') }}" class="btn {% if status_filter == 'OVERDUE' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">OVERDUE (1)</a>
-      <a href="{{ url_for('premiums.premium_list', status='WAIVED') }}" class="btn {% if status_filter == 'WAIVED' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">WAIVED (1)</a>
+  <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div class="card-title">
+      <i class="fa-solid fa-receipt" style="color: #f59e0b; margin-right: 8px;"></i> Installment Schedules & Reconciliation Ledger
     </div>
 
+    <!-- Filter Tabs / Links -->
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <a href="{{ url_for('premiums.premium_list') }}" class="btn {% if not status_filter or status_filter == 'ALL' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">ALL</a>
+      <a href="{{ url_for('premiums.premium_list', status='PAID') }}" class="btn {% if status_filter == 'PAID' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PAID</a>
+      <a href="{{ url_for('premiums.premium_list', status='PENDING') }}" class="btn {% if status_filter == 'PENDING' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">PENDING</a>
+      <a href="{{ url_for('premiums.premium_list', status='OVERDUE') }}" class="btn {% if status_filter == 'OVERDUE' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">OVERDUE</a>
+      <a href="{{ url_for('premiums.premium_list', status='WAIVED') }}" class="btn {% if status_filter == 'WAIVED' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">WAIVED</a>
+    </div>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
     <div class="table-responsive">
-      <table class="table">
+      <table class="data-table" id="premiumsTable">
         <thead>
           <tr>
             <th>Policy Number</th>
-            <th>Customer</th>
+            <th>Policyholder</th>
             <th>Installment #</th>
             <th>Due Date</th>
-            <th>Grace Period End</th>
-            <th>Scheduled Amount</th>
-            <th>Schedule Status</th>
-            <th>Payment Ref / Receipt</th>
+            <th>Grace Period</th>
+            <th>Scheduled</th>
+            <th>Status</th>
+            <th>Payment Receipt #</th>
             <th>Paid Date</th>
             <th>Paid Amount</th>
-            <th>Payment Mode</th>
+            <th>Channel</th>
           </tr>
         </thead>
         <tbody>
           {% for s in schedules %}
           <tr>
             <td style="font-weight: 700;">
-              <a href="{{ url_for('policies.policy_detail', policy_id=s.policy_id) }}" style="color: #0f172a;">
-                {{ s.policy_number }}
+              <a href="{{ url_for('policies.policy_detail', policy_id=s.policy_id) }}" style="color: #2563eb; text-decoration: none;">
+                <i class="fa-solid fa-shield" style="margin-right: 4px;"></i> {{ s.policy_number }}
               </a>
             </td>
-            <td>{{ s.customer_name }}</td>
+            <td style="font-weight: 500; color: #0f172a;">{{ s.customer_name }}</td>
             <td style="font-weight: 600;">#{{ s.installment_number }}</td>
-            <td>{{ s.due_date }}</td>
-            <td style="font-size: 0.82rem; color: #64748b;">{{ s.grace_period_end_date }}</td>
-            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(s.installment_amount|float) }}</td>
+            <td style="white-space: nowrap;">{{ s.due_date }}</td>
+            <td style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">{{ s.grace_period_end_date }}</td>
+            <td style="font-weight: 700; color: #0f172a;">₹{{ "{:,.2f}".format(s.installment_amount|float) }}</td>
             <td><span class="badge badge-{{ s.schedule_status|lower }}">{{ s.schedule_status }}</span></td>
             <td>
               {% if s.payment_reference_no %}
-                <span style="font-family: monospace; font-size: 0.8rem; font-weight: 600;">{{ s.payment_reference_no }}</span>
+                <span style="font-family: monospace; font-size: 0.8rem; font-weight: 600; color: #0284c7;">{{ s.payment_reference_no }}</span>
               {% else %}
-                <span style="color: #94a3b8; font-style: italic;">No Payment</span>
+                <span style="color: #94a3b8; font-style: italic; font-size: 0.78rem;">Pending Receipt</span>
               {% endif %}
             </td>
-            <td>{{ s.payment_date or '-' }}</td>
-            <td style="font-weight: 600;">
+            <td style="white-space: nowrap;">{{ s.payment_date or '-' }}</td>
+            <td style="font-weight: 700; color: #10b981;">
               {% if s.amount_paid %}₹{{ "{:,.2f}".format(s.amount_paid|float) }}{% else %}-{% endif %}
             </td>
             <td>
               {% if s.payment_mode %}
-                <span style="font-size: 0.82rem; font-weight: 600; color: #475569;">{{ s.payment_mode }}</span>
+                <span style="font-size: 0.78rem; font-weight: 600; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ s.payment_mode }}</span>
               {% else %}-{% endif %}
             </td>
           </tr>

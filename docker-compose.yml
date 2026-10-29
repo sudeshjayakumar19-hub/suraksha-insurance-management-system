@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  suraksha-insurance-web:
+    build: .
+    container_name: suraksha_insurance_web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - FLASK_ENV=production
+      - ISQLPLUS_URL=http://host.docker.internal:5560/isqlplus
+      - ORACLE_USER=scott
+      - ORACLE_PASS=tiger
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

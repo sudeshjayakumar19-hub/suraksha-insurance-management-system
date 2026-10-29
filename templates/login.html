@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorized Access Login | Suraksha Insurance Management System | Oracle 10g</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Standalone Login Page Styles */
+    .login-container {
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0b1120 0%, #0f172a 40%, #1e293b 100%);
+      padding: 24px 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .login-container::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(217, 119, 6, 0.15) 0%, rgba(217, 119, 6, 0) 70%);
+      top: -100px;
+      right: -100px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .login-container::after {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, rgba(37, 99, 235, 0) 70%);
+      bottom: -150px;
+      left: -150px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .login-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    .login-header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 32px 32px 24px;
+      text-align: center;
+      position: relative;
+      border-bottom: 3px solid #d97706;
+    }
+
+    .login-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: rgba(217, 119, 6, 0.15);
+      border: 2px solid #d97706;
+      border-radius: 16px;
+      margin-bottom: 14px;
+    }
+
+    .login-logo i {
+      font-size: 30px;
+      color: #f59e0b;
+    }
+
+    .login-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .login-title span {
+      color: #f59e0b;
+    }
+
+    .login-subtitle {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .db-status-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-top: 14px;
+    }
+
+    .pulse-dot-green {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+      animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .login-body {
+      padding: 30px;
+    }
+
+    .form-group-custom {
+      margin-bottom: 18px;
+    }
+
+    .form-label-custom {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .input-custom {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #0f172a;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .input-custom:focus {
+      outline: none;
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+    }
+
+    .toggle-password:hover {
+      color: #334155;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      margin-top: 10px;
+    }
+
+    .btn-login:hover {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    }
+
+    .demo-divider {
+      position: relative;
+      text-align: center;
+      margin: 24px 0 16px;
+    }
+
+    .demo-divider::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .demo-divider span {
+      position: relative;
+      background: #ffffff;
+      padding: 0 12px;
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .demo-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .demo-btn:hover {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .demo-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .demo-info {
+      overflow: hidden;
+    }
+
+    .demo-role {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .demo-user {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    .error-alert {
+      background-color: #fef2f2;
+      border: 1px solid #f87171;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.4;
+    }
+
+    .security-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      
+      <!-- Brand Header -->
+      <div class="login-header">
+        <div class="login-logo">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="login-title">SURAKSHA <span>INSURE</span></div>
+        <div class="login-subtitle">Enterprise Insurance Management System</div>
+        
+        <!-- Live Oracle Connection Status -->
+        <div class="db-status-bar">
+          <span class="pulse-dot-green"></span>
+          <span>Live Oracle 10g Enterprise Edition (ORCL / SCOTT)</span>
+        </div>
+      </div>
+
+      <!-- Login Form Body -->
+      <div class="login-body">
+        
+        <!-- Error Banner -->
+        {% if error %}
+        <div class="error-alert">
+          <i class="fa-solid fa-circle-exclamation" style="margin-top: 2px;"></i>
+          <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form id="loginForm" method="POST" action="{{ url_for('auth.login', next=next_url) }}">
+          <div class="form-group-custom">
+            <label class="form-label-custom" for="username">Authorized Username / Login ID</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-user-shield input-icon"></i>
+              <input type="text" id="username" name="username" class="input-custom" placeholder="e.g. admin, underwriter, surveyor, agent" required autofocus>
+            </div>
+          </div>
+
+          <div class="form-group-custom">
+            <label class="form-label-custom" for="password">Security Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input type="password" id="password" name="password" class="input-custom" placeholder="Enter security password" required>
+              <button type="button" class="toggle-password" id="togglePasswordBtn" aria-label="Toggle password visibility">
+                <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login" id="submitBtn">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            <span>Authenticate & Access Portal</span>
+          </button>
+        </form>
+
+        <!-- Quick 1-Click Demo Logins for Viva -->
+        <div class="demo-divider">
+          <span>Or 1-Click Quick Demo Authorization</span>
+        </div>
+
+        <div class="demo-grid">
+          <!-- Admin -->
+          <button type="button" class="demo-btn" onclick="quickLogin('admin', 'admin123')">
+            <div class="demo-avatar" style="background: #d97706;">AD</div>
+            <div class="demo-info">
+              <div class="demo-role">Administrator</div>
+              <div class="demo-user">admin / admin123</div>
+            </div>
+          </button>
+
+          <!-- Underwriter -->
+          <button type="button" class="demo-btn" onclick="quickLogin('underwriter', 'policy123')">
+            <div class="demo-avatar" style="background: #0284c7;">UW</div>
+            <div class="demo-info">
+              <div class="demo-role">Underwriter</div>
+              <div class="demo-user">underwriter / policy123</div>
+            </div>
+          </button>
+
+          <!-- Surveyor -->
+          <button type="button" class="demo-btn" onclick="quickLogin('surveyor', 'claims123')">
+            <div class="demo-avatar" style="background: #2563eb;">SV</div>
+            <div class="demo-info">
+              <div class="demo-role">Claims Surveyor</div>
+              <div class="demo-user">surveyor / claims123</div>
+            </div>
+          </button>
+
+          <!-- Agent -->
+          <button type="button" class="demo-btn" onclick="quickLogin('agent', 'agent123')">
+            <div class="demo-avatar" style="background: #10b981;">AG</div>
+            <div class="demo-info">
+              <div class="demo-role">Agency Manager</div>
+              <div class="demo-user">agent / agent123</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Single wide button for Oracle DBA -->
+        <div style="margin-top: 10px;">
+          <button type="button" class="demo-btn" style="width: 100%;" onclick="quickLogin('scott', 'tiger')">
+            <div class="demo-avatar" style="background: #7c3aed;">DB</div>
+            <div class="demo-info">
+              <div class="demo-role">Oracle SCOTT DBA (Direct Schema Access)</div>
+              <div class="demo-user">scott / tiger</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Security Note -->
+        <div class="security-badge">
+          <i class="fa-solid fa-lock" style="color: #10b981;"></i>
+          <span>Authorized Personnel Only &bull; 256-Bit Encrypted Session &bull; RBAC Protected</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Password visibility toggle
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    const pwdInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('togglePasswordIcon');
+
+    toggleBtn.addEventListener('click', function() {
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    });
+
+    // 1-Click Quick Demo Login Helper
+    function quickLogin(username, password) {
+      document.getElementById('username').value = username;
+      document.getElementById('password').value = password;
+      document.getElementById('loginForm').submit();
+    }
+  </script>
+</body>
+</html>

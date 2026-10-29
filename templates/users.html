@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Authorized Personnel & Access Control{% endblock %}
+{% block page_header %}Authorized Personnel & RBAC Security{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+  <div class="stat-card accent-gold">
+    <div class="stat-label"><i class="fa-solid fa-users-gear" style="margin-right: 6px;"></i> Total Authorized Staff</div>
+    <div class="stat-value">{{ users|length }}</div>
+    <div class="stat-subtext">Active Directory & Local Store</div>
+  </div>
+  <div class="stat-card accent-green">
+    <div class="stat-label"><i class="fa-solid fa-user-shield" style="margin-right: 6px;"></i> Active Credentials</div>
+    <div class="stat-value">
+      {% set active_count = namespace(value=0) %}
+      {% for u, d in users.items() if d.status == 'ACTIVE' %}{% set active_count.value = active_count.value + 1 %}{% endfor %}
+      {{ active_count.value }}
+    </div>
+    <div class="stat-subtext">Authenticated & Cleared</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-label"><i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i> Security Clearance Tiers</div>
+    <div class="stat-value">5</div>
+    <div class="stat-subtext">ADMIN, CUO, SURVEYOR, AGENT, DBA</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label"><i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Session Encryption</div>
+    <div class="stat-value" style="font-size: 1.3rem; color: #10b981;">AES-256</div>
+    <div class="stat-subtext">Role-Based Guard Active</div>
+  </div>
+</div>
+
+<!-- Main Table Card -->
+<div class="card">
+  <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">
+        <i class="fa-solid fa-id-card-clip" style="color: #f59e0b; margin-right: 8px;"></i>
+        Authorized System Users & Role Privileges
+      </div>
+      <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
+        Only registered personnel are permitted access. Administrative clearance is required to manage credentials.
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- Real-Time Interactive Filter Input -->
+      <div style="position: relative;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;"></i>
+        <input type="text" id="userLiveSearch" placeholder="Filter authorized staff..." onkeyup="filterUserTable()" style="padding: 7px 12px 7px 32px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; width: 220px; outline: none;">
+      </div>
+      
+      {% if current_user.get('role') == 'ADMIN' %}
+      <button type="button" class="btn btn-primary" onclick="openAddUserModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Authorize New User</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table" id="usersTable">
+        <thead>
+          <tr>
+            <th>Personnel Name & Identifier</th>
+            <th>Department</th>
+            <th>Role & Clearance</th>
+            <th>Assigned Privileges</th>
+            <th>Account Status</th>
+            <th>Last System Access</th>
+            {% if current_user.get('role') == 'ADMIN' %}
+            <th style="text-align: right;">Security Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for uname, u in users.items() %}
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: {{ u.badge_color }}; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">
+                  {{ u.name[0] }}
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #0f172a;">{{ u.name }}</div>
+                  <div style="font-size: 0.78rem; color: #64748b;">
+                    <code>@{{ uname }}</code> &bull; {{ u.email }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 500;">{{ u.department }}</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">{{ u.title }}</div>
+            </td>
+            <td>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: {{ u.badge_color }}15; color: {{ u.badge_color }}; border: 1px solid {{ u.badge_color }}40;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ u.badge_color }};"></span>
+                <span>{{ u.badge }}</span>
+              </span>
+            </td>
+            <td>
+              <div style="font-size: 0.78rem; color: #475569; max-width: 200px;">
+                {% if 'all' in u.permissions %}
+                <span class="badge" style="background: #fef3c7; color: #92400e;">FULL ROOT CLEARANCE</span>
+                {% else %}
+                {{ u.permissions|join(", ") }}
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              {% if u.status == 'ACTIVE' %}
+              <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #10b981;">
+                <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> ACTIVE
+              </span>
+              {% else %}
+              <span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #ef4444;">
+                <i class="fa-solid fa-ban" style="margin-right: 4px;"></i> SUSPENDED
+              </span>
+              {% endif %}
+            </td>
+            <td style="font-size: 0.82rem; color: #64748b; white-space: nowrap;">
+              <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> {{ u.last_login }}
+            </td>
+            {% if current_user.get('role') == 'ADMIN' %}
+            <td style="text-align: right; white-space: nowrap;">
+              {% if uname != 'admin' %}
+              <!-- Status Toggle Form -->
+              <form method="POST" action="{{ url_for('auth.user_toggle_status', username=uname) }}" style="display: inline; margin-right: 6px;">
+                <button type="submit" class="btn btn-outline btn-sm" title="Toggle Status">
+                  {% if u.status == 'ACTIVE' %}
+                  <i class="fa-solid fa-lock" style="color: #f59e0b;"></i> Suspend
+                  {% else %}
+                  <i class="fa-solid fa-unlock" style="color: #10b981;"></i> Activate
+                  {% endif %}
+                </button>
+              </form>
+
+              {% if uname not in ['admin', 'scott'] %}
+              <!-- Revoke Form -->
+              <form method="POST" action="{{ url_for('auth.user_delete', username=uname) }}" style="display: inline;" onsubmit="return confirm('Revoke authorization for user @{{ uname }}?');">
+                <button type="submit" class="btn-delete" title="Revoke Authorization">
+                  <i class="fa-solid fa-user-xmark"></i> Revoke
+                </button>
+              </form>
+              {% endif %}
+              {% else %}
+              <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Protected Master Admin</span>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Authorize New User -->
+<div class="modal-backdrop" id="addUserModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-user-shield" style="color: #f59e0b;"></i>
+        <span>Provision Authorized System User</span>
+      </div>
+      <button type="button" class="modal-close" onclick="closeAddUserModal()">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.user_add') }}">
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="username">Username / Login ID *</label>
+            <input type="text" id="username" name="username" placeholder="e.g. ksharma" required pattern="[a-zA-Z0-9_]{3,20}" title="Letters, numbers, underscores only (3-20 chars)">
+          </div>
+          <div class="form-group-modal">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Kapil Sharma" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="email">Corporate Email *</label>
+            <input type="email" id="email" name="email" placeholder="kapil.sharma@surakshainsure.in" required>
+          </div>
+          <div class="form-group-modal">
+            <label for="password">Initial Password *</label>
+            <input type="password" id="password" name="password" placeholder="Min. 6 characters" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="role">Security Clearance Role *</label>
+            <select id="role" name="role" required>
+              <option value="AGENT">Insurance Agent (Branch Distribution)</option>
+              <option value="UNDERWRITER">Lead Underwriter (Policy Issuance)</option>
+              <option value="SURVEYOR">Claims Surveyor (Adjudication & Inspection)</option>
+              <option value="ADMIN">System Administrator (Full Clearance)</option>
+            </select>
+          </div>
+          <div class="form-group-modal">
+            <label for="department">Assigned Department</label>
+            <input type="text" id="department" name="department" placeholder="e.g. Metro Underwriting Division" value="Branch Operations">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeAddUserModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-shield-check"></i>
+          <span>Save & Authorize User</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAddUserModal() {
+  document.getElementById('addUserModal').classList.add('active');
+}
+function closeAddUserModal() {
+  document.getElementById('addUserModal').classList.remove('active');
+}
+function filterUserTable() {
+  var input = document.getElementById("userLiveSearch");
+  var filter = input.value.toUpperCase();
+  var table = document.getElementById("usersTable");
+  var tr = table.getElementsByTagName("tr");
+
+  for (var i = 1; i < tr.length; i++) {
+    var tdText = tr[i].textContent || tr[i].innerText;
+    if (tdText.toUpperCase().indexOf(filter) > -1) {
+      tr[i].style.display = "";
+    } else {
+      tr[i].style.display = "none";
+    }
+  }
+}
+</script>
+{% endblock %}

@@ -3,56 +3,101 @@
 {% block page_header %}Policyholders & Customer Master{% endblock %}
 
 {% block content %}
+<!-- Interactive Toolbar -->
+<div class="table-toolbar">
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="search-pill-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="custSearchInput" class="search-pill-input" placeholder="Real-time filter policyholders..." onkeyup="filterTable('custSearchInput', 'customersTable', 'custCount')">
+    </div>
+    <span style="font-size: 0.85rem; color: #64748b;">
+      Showing <strong id="custCount" style="color: #0f172a;">{{ customers|length }}</strong> of {{ customers|length }} policyholders
+    </span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <!-- Export CSV -->
+    <button type="button" class="btn btn-outline btn-sm" onclick="exportTableToCSV('customersTable', 'Suraksha_Policyholders')" title="Download customer master as CSV">
+      <i class="fa-solid fa-file-csv" style="color: #059669;"></i>
+      <span>Export CSV</span>
+    </button>
+    <!-- Print Report -->
+    <button type="button" class="btn btn-outline btn-sm" onclick="window.print()" title="Print policyholder directory">
+      <i class="fa-solid fa-print"></i>
+      <span>Print</span>
+    </button>
+    <!-- Add Customer Trigger -->
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddCustomerModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Add New Policyholder</span>
+    </button>
+  </div>
+</div>
+
 <div class="card">
-  <div class="card-header">
-    <div class="card-title"><i class="fa-solid fa-users" style="margin-right: 8px;"></i> Customer Directory (25 Records)</div>
-    <div style="font-size: 0.8rem; color: #d97706; background-color: rgba(217, 119, 6, 0.1); padding: 4px 10px; border-radius: 4px;">
-      <i class="fa-solid fa-lock"></i> Add Customer disabled to preserve 223 verified rows
+  <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+    <div class="card-title">
+      <i class="fa-solid fa-users" style="color: #f59e0b; margin-right: 8px;"></i> Policyholder Master Directory
+      <span style="font-size: 0.85rem; font-weight: normal; color: #64748b; margin-left: 8px;">(Live Oracle DML Enabled)</span>
     </div>
   </div>
-  <div class="card-body">
-    <!-- Search Form -->
-    <form method="GET" action="{{ url_for('customers.customer_list') }}" class="search-bar">
-      <input type="text" name="q" value="{{ search }}" class="form-control" style="flex: 1;" placeholder="Search customer by name, code (e.g. CUST-IND-001), or city...">
-      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-      {% if search %}
-      <a href="{{ url_for('customers.customer_list') }}" class="btn btn-outline">Clear</a>
-      {% endif %}
-    </form>
 
+  <div class="card-body" style="padding: 0;">
     <div class="table-responsive">
-      <table class="table">
+      <table class="data-table" id="customersTable">
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Name</th>
+            <th>Customer Code</th>
+            <th>Full Name & Email</th>
             <th>Date of Birth</th>
             <th>Gender</th>
-            <th>Contact</th>
+            <th>Contact Phone</th>
             <th>Location</th>
             <th>KYC Status</th>
-            <th>Action</th>
+            <th style="text-align: right;">Customer Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for c in customers %}
           <tr>
-            <td style="font-weight: 700; color: #0f172a;">{{ c.customer_code }}</td>
+            <td style="font-weight: 700; color: #0f172a;">
+              <a href="{{ url_for('customers.customer_detail', customer_id=c.customer_id) }}" style="color: #0f172a; text-decoration: none;">
+                <i class="fa-solid fa-address-card" style="color: #2563eb; margin-right: 4px;"></i> {{ c.customer_code }}
+              </a>
+            </td>
             <td>
-              <div style="font-weight: 600;">{{ c.first_name }} {{ c.last_name }}</div>
+              <a href="{{ url_for('customers.customer_detail', customer_id=c.customer_id) }}" style="font-weight: 600; color: #2563eb; text-decoration: none;">
+                {{ c.first_name }} {{ c.last_name }}
+              </a>
               <div style="font-size: 0.78rem; color: #64748b;">{{ c.email }}</div>
             </td>
-            <td>{{ c.date_of_birth }}</td>
+            <td style="white-space: nowrap;">{{ c.date_of_birth }}</td>
             <td>{{ c.gender }}</td>
             <td>{{ c.phone_number }}</td>
             <td>{{ c.city }}, {{ c.state }}</td>
             <td>
               <span class="badge badge-{{ c.kyc_status|lower }}">{{ c.kyc_status }}</span>
             </td>
-            <td>
-              <a href="{{ url_for('customers.customer_detail', customer_id=c.customer_id) }}" class="btn btn-outline btn-sm">
-                <i class="fa-solid fa-eye"></i> View Profile
+            <td style="text-align: right; white-space: nowrap;">
+              <!-- 1-Click Interactive KYC Verification -->
+              {% if c.kyc_status != 'VERIFIED' %}
+              <form method="POST" action="{{ url_for('customers.customer_verify_kyc', customer_id=c.customer_id) }}" style="display: inline; margin-right: 4px;">
+                <button type="submit" class="btn-action-sm btn-action-success" title="Verify KYC in Oracle 10g">
+                  <i class="fa-solid fa-shield-check"></i> Verify KYC
+                </button>
+              </form>
+              {% endif %}
+
+              <a href="{{ url_for('customers.customer_detail', customer_id=c.customer_id) }}" class="btn btn-outline btn-sm" style="margin-right: 4px;">
+                <i class="fa-solid fa-eye"></i> View
               </a>
+
+              <!-- Delete Customer Form -->
+              <form method="POST" action="{{ url_for('customers.customer_delete', customer_id=c.customer_id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete customer {{ c.first_name }} {{ c.last_name }} ({{ c.customer_code }})?');">
+                <button type="submit" class="btn-delete" title="Delete customer from Oracle 10g">
+                  <i class="fa-solid fa-trash-can"></i> Delete
+                </button>
+              </form>
             </td>
           </tr>
           {% endfor %}
@@ -61,4 +106,114 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Add New Customer -->
+<div class="modal-backdrop" id="addCustomerModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="fa-solid fa-user-plus" style="color: #f59e0b;"></i>
+        <span>Register New Policyholder</span>
+      </div>
+      <button type="button" class="modal-close" onclick="closeAddCustomerModal()">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('customers.customer_add') }}">
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="first_name">First Name *</label>
+            <input type="text" id="first_name" name="first_name" placeholder="e.g. Ramesh" required>
+          </div>
+          <div class="form-group-modal">
+            <label for="last_name">Last Name *</label>
+            <input type="text" id="last_name" name="last_name" placeholder="e.g. Sharma" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender">
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group-modal">
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" name="dob" value="1992-05-15" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" placeholder="ramesh.sharma@example.com" required>
+          </div>
+          <div class="form-group-modal">
+            <label for="phone">Phone Number</label>
+            <input type="text" id="phone" name="phone" placeholder="e.g. 9820123456" value="9820123456">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="national_id">National ID / PAN Card</label>
+            <input type="text" id="national_id" name="national_id" placeholder="e.g. PAN-RAM7890X">
+          </div>
+          <div class="form-group-modal">
+            <label for="kyc_status">KYC Status</label>
+            <select id="kyc_status" name="kyc_status">
+              <option value="VERIFIED">Verified</option>
+              <option value="PENDING">Pending</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="address">Street Address</label>
+          <input type="text" id="address" name="address" placeholder="e.g. Flat 402, Lotus Tower, Nariman Point">
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group-modal">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" value="Mumbai">
+          </div>
+          <div class="form-group-modal">
+            <label for="state">State</label>
+            <input type="text" id="state" name="state" value="Maharashtra">
+          </div>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="postal_code">Postal Code</label>
+          <input type="text" id="postal_code" name="postal_code" value="400021">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeAddCustomerModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-check"></i>
+          <span>Register in Oracle 10g</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.add('active');
+  }
+  function closeAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.remove('active');
+  }
+  document.getElementById('addCustomerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddCustomerModal();
+  });
+</script>
 {% endblock %}

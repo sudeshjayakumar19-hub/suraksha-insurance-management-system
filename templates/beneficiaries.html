@@ -21,36 +21,62 @@
   </div>
 </div>
 
+<!-- Interactive Toolbar -->
+<div class="table-toolbar">
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="search-pill-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="benSearchInput" class="search-pill-input" placeholder="Real-time filter beneficiaries..." onkeyup="filterTable('benSearchInput', 'beneficiariesTable', 'benCount')">
+    </div>
+    <span style="font-size: 0.85rem; color: #64748b;">
+      Showing <strong id="benCount" style="color: #0f172a;">{{ beneficiaries|length }}</strong> of {{ beneficiaries|length }} designations
+    </span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button type="button" class="btn btn-outline btn-sm" onclick="exportTableToCSV('beneficiariesTable', 'Suraksha_Beneficiaries')" title="Download as CSV">
+      <i class="fa-solid fa-file-csv" style="color: #059669;"></i>
+      <span>Export CSV</span>
+    </button>
+    <button type="button" class="btn btn-outline btn-sm" onclick="window.print()" title="Print report">
+      <i class="fa-solid fa-print"></i>
+      <span>Print</span>
+    </button>
+  </div>
+</div>
+
 <!-- Beneficiaries Directory with Calculated Monetary Entitlement -->
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><i class="fa-solid fa-handshake-angle" style="margin-right: 8px;"></i> Nominee Designations & Computed Monetary Entitlements</div>
+    <div class="card-title">
+      <i class="fa-solid fa-handshake-angle" style="color: #f59e0b; margin-right: 8px;"></i> Nominee Designations & Computed Monetary Entitlements
+    </div>
   </div>
-  <div class="card-body">
+  <div class="card-body" style="padding: 0;">
     <div class="table-responsive">
-      <table class="table">
+      <table class="data-table" id="beneficiariesTable">
         <thead>
           <tr>
             <th>Policy Number</th>
-            <th>Policy Sum Assured</th>
+            <th>Sum Assured</th>
             <th>Beneficiary Name</th>
             <th>Relationship to Insured</th>
             <th>Designation Type</th>
             <th>Allocation %</th>
-            <th>Calculated Benefit Entitlement</th>
-            <th>Contact Info</th>
+            <th>Calculated Entitlement</th>
+            <th>Contact Details</th>
           </tr>
         </thead>
         <tbody>
           {% for b in beneficiaries %}
           <tr>
             <td style="font-weight: 700;">
-              <a href="{{ url_for('policies.policy_detail', policy_id=b.policy_id) }}" style="color: #0f172a;">
-                {{ b.policy_number }}
+              <a href="{{ url_for('policies.policy_detail', policy_id=b.policy_id) }}" style="color: #2563eb; text-decoration: none;">
+                <i class="fa-solid fa-shield" style="margin-right: 4px;"></i> {{ b.policy_number }}
               </a>
             </td>
-            <td>₹{{ "{:,.2f}".format(b.sum_assured|float) }}</td>
-            <td style="font-weight: 600;">{{ b.beneficiary_name }}</td>
+            <td style="font-weight: 600;">₹{{ "{:,.2f}".format(b.sum_assured|float) }}</td>
+            <td style="font-weight: 600; color: #0f172a;">{{ b.beneficiary_name }}</td>
             <td>{{ b.relationship_to_insured }}</td>
             <td>
               <span class="badge {% if b.designation == 'PRIMARY' %}badge-active{% else %}badge-pending{% endif %}">
@@ -69,13 +95,13 @@
 </div>
 
 <!-- Policy Allocation Totals Verification Table -->
-<div class="card">
+<div class="card" style="margin-top: 24px;">
   <div class="card-header">
-    <div class="card-title"><i class="fa-solid fa-calculator" style="margin-right: 8px;"></i> Policy Allocation Sum Verification (Audit Quality Gate)</div>
+    <div class="card-title"><i class="fa-solid fa-calculator" style="color: #10b981; margin-right: 8px;"></i> Policy Allocation Sum Verification (Audit Quality Gate)</div>
   </div>
-  <div class="card-body">
+  <div class="card-body" style="padding: 0;">
     <div class="table-responsive">
-      <table class="table">
+      <table class="data-table">
         <thead>
           <tr>
             <th>Policy Number</th>
@@ -87,7 +113,7 @@
         <tbody>
           {% for p in policy_sums %}
           <tr>
-            <td style="font-weight: 700;">{{ p.policy_number }}</td>
+            <td style="font-weight: 700; color: #0f172a;">{{ p.policy_number }}</td>
             <td>{{ p.total_nominees }} Nominee(s)</td>
             <td style="font-weight: 700; color: #0f172a;">{{ p.total_allocation_pct }}%</td>
             <td>

@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, abort
-from database import query, query_one
+from flask import Blueprint, render_template, request, abort, redirect, url_for, flash
+from database import query, query_one, query_scalar, execute_dml
+from routes.auth import role_required
 
 policies_bp = Blueprint("policies", __name__)
 
@@ -35,10 +36,100 @@ def policy_list():
         JOIN agent a ON p.agent_id = a.agent_id
         JOIN policy_plan pp ON p.plan_id = pp.plan_id
         {where_str}
-        ORDER BY p.policy_id
+        ORDER BY p.policy_id DESC
     """
     policies = query(sql)
-    return render_template("policies.html", policies=policies, search=search, status_filter=status_filter)
+
+    # Fetch lookup data for Add Policy modal
+    all_customers = query("SELECT customer_id, customer_code, first_name || ' ' || last_name AS name FROM customer ORDER BY first_name")
+    all_plans = query("SELECT plan_id, plan_code, plan_name, policy_type, min_sum_assured, base_premium_rate FROM policy_plan ORDER BY plan_name")
+    all_agents = query("SELECT agent_id, agent_code, first_name || ' ' || last_name AS name FROM agent WHERE status = 'ACTIVE' ORDER BY first_name")
+
+    return render_template(
+        "policies.html",
+        policies=policies,
+        search=search,
+        status_filter=status_filter,
+        all_customers=all_customers,
+        all_plans=all_plans,
+        all_agents=all_agents
+    )
+
+@policies_bp.route("/policies/add", methods=["POST"])
+@role_required("ADMIN", "UNDERWRITER", "AGENT")
+def policy_add():
+    customer_id = request.form.get("customer_id")
+    plan_id = request.form.get("plan_id")
+    agent_id = request.form.get("agent_id")
+    sum_assured = request.form.get("sum_assured", "1000000").strip()
+    premium_amount = request.form.get("premium_amount", "25000").strip()
+    payment_freq = request.form.get("payment_frequency", "ANNUAL").strip()
+    start_date = request.form.get("start_date", "2026-01-01").strip()
+    end_date = request.form.get("end_date", "2036-01-01").strip()
+    policy_status = request.form.get("policy_status", "ACTIVE").strip()
+
+    if not customer_id or not plan_id or not agent_id:
+        flash("Customer, Plan, and Agent selections are required to underwrite a policy.", "danger")
+        return redirect(url_for("policies.policy_list"))
+
+    # Generate next policy number
+    next_pid = query_scalar("SELECT NVL(MAX(policy_id), 0) + 1 FROM policy", default=100) or 100
+    plan_code = query_scalar(f"SELECT plan_code FROM policy_plan WHERE plan_id = {plan_id}", default="POL")
+    pol_number = f"POL-{plan_code[:4]}-2026-{int(next_pid):04d}"
+
+    sql = f"""
+        INSERT INTO policy (
+            customer_id, agent_id, plan_id, policy_number,
+            sum_assured, premium_amount, payment_frequency,
+            start_date, end_date, issue_date, policy_status
+        ) VALUES (
+            {customer_id}, {agent_id}, {plan_id}, '{pol_number}',
+            {sum_assured}, {premium_amount}, '{payment_freq}',
+            TO_DATE('{start_date}', 'YYYY-MM-DD'), TO_DATE('{end_date}', 'YYYY-MM-DD'),
+            SYSDATE, '{policy_status}'
+        )
+    """
+    try:
+        execute_dml(sql)
+        flash(f"Policy '{pol_number}' successfully underwritten and issued in Oracle 10g!", "success")
+    except Exception as e:
+        flash(f"Oracle 10g Error: {e}", "danger")
+
+    return redirect(url_for("policies.policy_list"))
+
+@policies_bp.route("/policies/status/<int:policy_id>/<new_status>", methods=["POST"])
+@role_required("ADMIN", "UNDERWRITER")
+def policy_update_status(policy_id, new_status):
+    valid_statuses = ["ACTIVE", "LAPSED", "SURRENDERED", "PENDING_RENEWAL"]
+    clean_status = new_status.upper().strip()
+    if clean_status not in valid_statuses:
+        flash(f"Invalid policy status: {clean_status}", "danger")
+        return redirect(url_for("policies.policy_list"))
+
+    try:
+        execute_dml(f"UPDATE policy SET policy_status = '{clean_status}' WHERE policy_id = {policy_id}")
+        flash(f"Policy #{policy_id} status updated to '{clean_status}' in Oracle 10g database.", "success")
+    except Exception as e:
+        flash(f"Database Error: {e}", "danger")
+
+    return redirect(request.referrer or url_for("policies.policy_list"))
+
+@policies_bp.route("/policies/delete/<int:policy_id>", methods=["POST"])
+@role_required("ADMIN")
+def policy_delete(policy_id):
+    try:
+        execute_dml(f"DELETE FROM policy WHERE policy_id = {policy_id}")
+        flash(f"Policy #{policy_id} successfully deleted from Oracle 10g database.", "success")
+    except RuntimeError as e:
+        err_msg = str(e)
+        if "ORA-02292" in err_msg:
+            flash(f"Cannot delete Policy #{policy_id}: Dependent records (claims, beneficiaries, or premium schedules) exist. Foreign key constraint protected by Oracle 10g.", "warning")
+        else:
+            flash(f"Database Error: {e}", "danger")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+
+    return redirect(url_for("policies.policy_list"))
 
 @policies_bp.route("/policies/<policy_id>")
 def policy_detail(policy_id):
