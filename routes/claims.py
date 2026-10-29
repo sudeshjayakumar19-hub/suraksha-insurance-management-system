@@ -61,21 +61,21 @@ def claim_add():
         flash("Policy selection and claimed amount are required.", "danger")
         return redirect(url_for("claims.claim_list"))
 
-    next_cid = query_scalar("SELECT NVL(MAX(claim_id), 0) + 1 FROM claim", default=100) or 100
-    claim_num = f"CLM-2026-{int(next_cid):04d}"
-    desc_clean = description.replace("'", "''")
-
-    sql = f"""
-        INSERT INTO claim (
-            policy_id, claim_number, incident_date, filing_date,
-            claimed_amount, claim_description, claim_status
-        ) VALUES (
-            {policy_id}, '{claim_num}', TO_DATE('{incident_date}', 'YYYY-MM-DD'),
-            TO_DATE('{filing_date}', 'YYYY-MM-DD'), {claimed_amount},
-            '{desc_clean}', 'SUBMITTED'
-        )
-    """
     try:
+        next_cid = query_scalar("SELECT NVL(MAX(claim_id), 0) + 1 FROM claim", default=100) or 100
+        claim_num = f"CLM-2026-{int(next_cid):04d}"
+        desc_clean = description.replace("'", "''")
+
+        sql = f"""
+            INSERT INTO claim (
+                policy_id, claim_number, incident_date, filing_date,
+                claimed_amount, claim_description, claim_status
+            ) VALUES (
+                {policy_id}, '{claim_num}', TO_DATE('{incident_date}', 'YYYY-MM-DD'),
+                TO_DATE('{filing_date}', 'YYYY-MM-DD'), {claimed_amount},
+                '{desc_clean}', 'SUBMITTED'
+            )
+        """
         execute_dml(sql)
         flash(f"Claim '{claim_num}' (₹{claimed_amount}) successfully registered in Oracle 10g database!", "success")
     except Exception as e:

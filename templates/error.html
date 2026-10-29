@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title or "Service Notice" }}{% endblock %}
+
+{% block page_header %}{{ page_header or "Service Unavailable" }}{% endblock %}
+
+{% block content %}
+<div class="card" style="border-left: 4px solid #ef4444; margin-top: 16px;">
+  <div class="card-body" style="padding: 28px 24px;">
+    <div style="display: flex; align-items: flex-start; gap: 16px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+        <i class="fa-solid fa-database"></i>
+      </div>
+      <div>
+        <h3 style="margin-top: 0; color: #0f172a; font-size: 1.25rem;">{{ title or "Oracle Database Bridge Unavailable" }}</h3>
+        <p style="color: #475569; margin-bottom: 12px; line-height: 1.6;">
+          {{ message or "The application is running, but the Oracle 10g database bridge is currently unreachable. Database-backed operations and real-time records are temporarily paused." }}
+        </p>
+        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0;">
+          <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>
+          Web presentation and authentication services are operational. Once the Oracle iSQL*Plus bridge service is online, live records will display automatically.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

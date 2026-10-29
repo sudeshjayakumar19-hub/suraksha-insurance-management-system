@@ -72,24 +72,24 @@ def policy_add():
         flash("Customer, Plan, and Agent selections are required to underwrite a policy.", "danger")
         return redirect(url_for("policies.policy_list"))
 
-    # Generate next policy number
-    next_pid = query_scalar("SELECT NVL(MAX(policy_id), 0) + 1 FROM policy", default=100) or 100
-    plan_code = query_scalar(f"SELECT plan_code FROM policy_plan WHERE plan_id = {plan_id}", default="POL")
-    pol_number = f"POL-{plan_code[:4]}-2026-{int(next_pid):04d}"
-
-    sql = f"""
-        INSERT INTO policy (
-            customer_id, agent_id, plan_id, policy_number,
-            sum_assured, premium_amount, payment_frequency,
-            start_date, end_date, issue_date, policy_status
-        ) VALUES (
-            {customer_id}, {agent_id}, {plan_id}, '{pol_number}',
-            {sum_assured}, {premium_amount}, '{payment_freq}',
-            TO_DATE('{start_date}', 'YYYY-MM-DD'), TO_DATE('{end_date}', 'YYYY-MM-DD'),
-            SYSDATE, '{policy_status}'
-        )
-    """
     try:
+        # Generate next policy number
+        next_pid = query_scalar("SELECT NVL(MAX(policy_id), 0) + 1 FROM policy", default=100) or 100
+        plan_code = query_scalar(f"SELECT plan_code FROM policy_plan WHERE plan_id = {plan_id}", default="POL")
+        pol_number = f"POL-{plan_code[:4]}-2026-{int(next_pid):04d}"
+
+        sql = f"""
+            INSERT INTO policy (
+                customer_id, agent_id, plan_id, policy_number,
+                sum_assured, premium_amount, payment_frequency,
+                start_date, end_date, issue_date, policy_status
+            ) VALUES (
+                {customer_id}, {agent_id}, {plan_id}, '{pol_number}',
+                {sum_assured}, {premium_amount}, '{payment_freq}',
+                TO_DATE('{start_date}', 'YYYY-MM-DD'), TO_DATE('{end_date}', 'YYYY-MM-DD'),
+                SYSDATE, '{policy_status}'
+            )
+        """
         execute_dml(sql)
         flash(f"Policy '{pol_number}' successfully underwritten and issued in Oracle 10g!", "success")
     except Exception as e:

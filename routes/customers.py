@@ -61,22 +61,22 @@ def customer_add():
     st = state.replace("'", "''")
     pc = postal_code.replace("'", "''")
 
-    # Generate next code
-    next_seq = query_scalar("SELECT NVL(MAX(customer_id), 0) + 1 FROM customer", default=100) or 100
-    cust_code = f"CUST-2026-{int(next_seq):04d}"
-
-    sql = f"""
-        INSERT INTO customer (
-            customer_code, first_name, last_name, date_of_birth, gender,
-            email, phone_number, national_id, address_line, city, state, postal_code,
-            registration_date, kyc_status
-        ) VALUES (
-            '{cust_code}', '{f_name}', '{l_name}', TO_DATE('{dob}', 'YYYY-MM-DD'), '{gender}',
-            '{em}', '{ph}', '{nat_id}', '{addr}', '{ct}', '{st}', '{pc}',
-            SYSDATE, '{kyc_status}'
-        )
-    """
     try:
+        # Generate next code
+        next_seq = query_scalar("SELECT NVL(MAX(customer_id), 0) + 1 FROM customer", default=100) or 100
+        cust_code = f"CUST-2026-{int(next_seq):04d}"
+
+        sql = f"""
+            INSERT INTO customer (
+                customer_code, first_name, last_name, date_of_birth, gender,
+                email, phone_number, national_id, address_line, city, state, postal_code,
+                registration_date, kyc_status
+            ) VALUES (
+                '{cust_code}', '{f_name}', '{l_name}', TO_DATE('{dob}', 'YYYY-MM-DD'), '{gender}',
+                '{em}', '{ph}', '{nat_id}', '{addr}', '{ct}', '{st}', '{pc}',
+                SYSDATE, '{kyc_status}'
+            )
+        """
         execute_dml(sql)
         flash(f"Customer '{first_name} {last_name}' ({cust_code}) successfully created in Oracle 10g database!", "success")
     except Exception as e:

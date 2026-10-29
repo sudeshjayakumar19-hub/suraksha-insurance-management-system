@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: suraksha-insurance-portal
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ORACLE_CONNECT_ID
+        value: orcl
+      - key: ORACLE_HOST
+        sync: false
+      - key: ORACLE_PORT
+        sync: false
+      - key: ORACLE_USER
+        sync: false
+      - key: ORACLE_PASSWORD
+        sync: false

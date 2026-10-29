@@ -3,6 +3,38 @@
 {% block page_header %}Database Health & Catalog Integrity Dashboard{% endblock %}
 
 {% block content %}
+{% if not db_connected %}
+<!-- System Health Status Banner: Bridge Disconnected -->
+<div class="card" style="background: linear-gradient(to right, #7f1d1d, #991b1b); color: #ffffff; margin-bottom: 24px;">
+  <div class="card-body" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9;">Bridge Connection Status</div>
+        <div style="font-size: 1.75rem; font-weight: 800; margin-top: 4px; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-triangle-exclamation" style="color: #fca5a5;"></i>
+          <span>DATABASE BRIDGE TEMPORARILY UNAVAILABLE</span>
+        </div>
+        <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 4px;">{{ version_info }}</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.9;">Service Status</div>
+        <div style="font-size: 1.75rem; font-weight: 800; margin-top: 2px;">DISCONNECTED</div>
+        <div style="font-size: 0.8rem; color: #fecaca;">Web tier operational &bull; Bridge offline</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if db_error_message %}
+<div class="card" style="border-left: 4px solid #ef4444; margin-bottom: 24px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <i class="fa-solid fa-circle-exclamation" style="color: #ef4444; font-size: 1.25rem;"></i>
+      <span style="color: #1e293b; font-size: 0.9rem;">{{ db_error_message }}</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% else %}
 <!-- System Health Status Banner -->
 <div class="card" style="background: linear-gradient(to right, #064e3b, #0f766e); color: #ffffff; margin-bottom: 24px;">
   <div class="card-body" style="padding: 24px;">
@@ -23,6 +55,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Database Object Counts -->
 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
@@ -103,6 +136,13 @@
             <td style="font-weight: 600; color: #10b981;">0</td>
             <td><span class="badge badge-active"><i class="fa-solid fa-check"></i> MATCH</span></td>
           </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: #64748b; padding: 24px;">
+              <i class="fa-solid fa-database" style="margin-right: 8px;"></i>
+              Database metrics are temporarily unavailable because the Oracle bridge is offline.
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -133,6 +173,13 @@
             <td style="font-weight: 700;">{{ trg.table_name }}</td>
             <td>BEFORE INSERT FOR EACH ROW</td>
             <td><span class="badge badge-active">{{ trg.status }}</span></td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: #64748b; padding: 24px;">
+              <i class="fa-solid fa-bolt" style="margin-right: 8px;"></i>
+              Trigger audit information is temporarily unavailable (Bridge offline).
+            </td>
           </tr>
           {% endfor %}
         </tbody>

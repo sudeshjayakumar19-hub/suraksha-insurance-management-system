@@ -119,61 +119,92 @@ ORDER BY p.policy_number"""
 
 @health_bp.route("/health")
 def db_health():
-    # 1. 14 Tables status and row counts
-    sql_tables = """
-        SELECT 'BRANCH' AS table_name, COUNT(*) AS row_count FROM branch UNION ALL
-        SELECT 'CUSTOMER', COUNT(*) FROM customer UNION ALL
-        SELECT 'BENEFICIARY', COUNT(*) FROM beneficiary UNION ALL
-        SELECT 'POLICY_PLAN', COUNT(*) FROM policy_plan UNION ALL
-        SELECT 'AGENT', COUNT(*) FROM agent UNION ALL
-        SELECT 'POLICY', COUNT(*) FROM policy UNION ALL
-        SELECT 'POLICY_BENEFICIARY', COUNT(*) FROM policy_beneficiary UNION ALL
-        SELECT 'POLICY_RENEWAL', COUNT(*) FROM policy_renewal UNION ALL
-        SELECT 'PREMIUM_SCHEDULE', COUNT(*) FROM premium_schedule UNION ALL
-        SELECT 'PREMIUM_PAYMENT', COUNT(*) FROM premium_payment UNION ALL
-        SELECT 'CLAIM', COUNT(*) FROM claim UNION ALL
-        SELECT 'CLAIM_DOCUMENT', COUNT(*) FROM claim_document UNION ALL
-        SELECT 'CLAIM_ASSESSMENT', COUNT(*) FROM claim_assessment UNION ALL
-        SELECT 'CLAIM_SETTLEMENT', COUNT(*) FROM claim_settlement
-    """
-    table_rows = query(sql_tables)
-    total_db_rows = sum(int(r.get("row_count", 0)) for r in table_rows)
+    is_json = request.args.get("format") == "json" or "application/json" in request.headers.get("Accept", "")
 
-    # 2. Constraints breakdown
-    sql_constraints = """
-        SELECT constraint_type, COUNT(*) AS count
-        FROM user_constraints
-        WHERE table_name IN ('BRANCH', 'AGENT', 'CUSTOMER', 'BENEFICIARY', 'POLICY_PLAN',
-                             'POLICY', 'POLICY_BENEFICIARY', 'POLICY_RENEWAL', 'PREMIUM_SCHEDULE',
-                             'PREMIUM_PAYMENT', 'CLAIM', 'CLAIM_DOCUMENT', 'CLAIM_ASSESSMENT', 'CLAIM_SETTLEMENT')
-        GROUP BY constraint_type
-        ORDER BY constraint_type
-    """
-    constraints_raw = query(sql_constraints)
-    constraints = {"P": 0, "R": 0, "U": 0, "C": 0}
-    for c in constraints_raw:
-        ctype = c.get("constraint_type", c.get("con"))
-        if ctype in constraints:
-            constraints[ctype] = int(c.get("count", c.get("total", 0)))
+    try:
+        # 1. 14 Tables status and row counts
+        sql_tables = """
+            SELECT 'BRANCH' AS table_name, COUNT(*) AS row_count FROM branch UNION ALL
+            SELECT 'CUSTOMER', COUNT(*) FROM customer UNION ALL
+            SELECT 'BENEFICIARY', COUNT(*) FROM beneficiary UNION ALL
+            SELECT 'POLICY_PLAN', COUNT(*) FROM policy_plan UNION ALL
+            SELECT 'AGENT', COUNT(*) FROM agent UNION ALL
+            SELECT 'POLICY', COUNT(*) FROM policy UNION ALL
+            SELECT 'POLICY_BENEFICIARY', COUNT(*) FROM policy_beneficiary UNION ALL
+            SELECT 'POLICY_RENEWAL', COUNT(*) FROM policy_renewal UNION ALL
+            SELECT 'PREMIUM_SCHEDULE', COUNT(*) FROM premium_schedule UNION ALL
+            SELECT 'PREMIUM_PAYMENT', COUNT(*) FROM premium_payment UNION ALL
+            SELECT 'CLAIM', COUNT(*) FROM claim UNION ALL
+            SELECT 'CLAIM_DOCUMENT', COUNT(*) FROM claim_document UNION ALL
+            SELECT 'CLAIM_ASSESSMENT', COUNT(*) FROM claim_assessment UNION ALL
+            SELECT 'CLAIM_SETTLEMENT', COUNT(*) FROM claim_settlement
+        """
+        table_rows = query(sql_tables)
+        total_db_rows = sum(int(r.get("row_count", 0)) for r in table_rows)
 
-    # 3. Sequences count
-    seq_count = query_scalar("SELECT COUNT(*) FROM user_sequences WHERE sequence_name LIKE 'SEQ_%'", 14)
+        # 2. Constraints breakdown
+        sql_constraints = """
+            SELECT constraint_type, COUNT(*) AS count
+            FROM user_constraints
+            WHERE table_name IN ('BRANCH', 'AGENT', 'CUSTOMER', 'BENEFICIARY', 'POLICY_PLAN',
+                                 'POLICY', 'POLICY_BENEFICIARY', 'POLICY_RENEWAL', 'PREMIUM_SCHEDULE',
+                                 'PREMIUM_PAYMENT', 'CLAIM', 'CLAIM_DOCUMENT', 'CLAIM_ASSESSMENT', 'CLAIM_SETTLEMENT')
+            GROUP BY constraint_type
+            ORDER BY constraint_type
+        """
+        constraints_raw = query(sql_constraints)
+        constraints = {"P": 0, "R": 0, "U": 0, "C": 0}
+        for c in constraints_raw:
+            ctype = c.get("constraint_type", c.get("con"))
+            if ctype in constraints:
+                constraints[ctype] = int(c.get("count", c.get("total", 0)))
 
-    # 4. Triggers count and status
-    triggers = query("SELECT trigger_name, table_name, status FROM user_triggers WHERE trigger_name LIKE 'TRG_%' ORDER BY table_name")
+        # 3. Sequences count
+        seq_count = query_scalar("SELECT COUNT(*) FROM user_sequences WHERE sequence_name LIKE 'SEQ_%'", 14)
 
-    # 5. Database metadata
-    version_info = "Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - Production"
+        # 4. Triggers count and status
+        triggers = query("SELECT trigger_name, table_name, status FROM user_triggers WHERE trigger_name LIKE 'TRG_%' ORDER BY table_name")
 
-    return render_template(
-        "health.html",
-        table_rows=table_rows,
-        total_db_rows=total_db_rows,
-        constraints=constraints,
-        seq_count=seq_count,
-        triggers=triggers,
-        version_info=version_info
-    )
+        # 5. Database metadata
+        version_info = "Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - Production"
+
+        if is_json:
+            return {
+                "status": "healthy",
+                "database": "connected",
+                "tables_count": len(table_rows),
+                "total_rows": total_db_rows
+            }, 200
+
+        return render_template(
+            "health.html",
+            table_rows=table_rows,
+            total_db_rows=total_db_rows,
+            constraints=constraints,
+            seq_count=seq_count,
+            triggers=triggers,
+            version_info=version_info,
+            db_connected=True
+        )
+    except Exception as e:
+        if is_json:
+            return {
+                "status": "degraded",
+                "database": "disconnected",
+                "message": "Oracle database bridge is temporarily unavailable."
+            }, 200
+
+        return render_template(
+            "health.html",
+            table_rows=[],
+            total_db_rows="Unavailable",
+            constraints={"P": 0, "R": 0, "U": 0, "C": 0},
+            seq_count=0,
+            triggers=[],
+            version_info="Oracle Database 10g Bridge: Temporarily Disconnected",
+            db_connected=False,
+            db_error_message="The Oracle 10g iSQL*Plus bridge is temporarily unreachable. Live database health metrics will resume once the database bridge service is online."
+        ), 200
 
 @health_bp.route("/sql-demo")
 def sql_demo():
